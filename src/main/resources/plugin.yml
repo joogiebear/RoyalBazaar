@@ -1,0 +1,32 @@
+name: RoyalBazaar
+version: ${version}
+main: com.mystipixel.royalbazaar.RoyalBazaarPlugin
+api-version: '1.21'
+author: Mystipixel
+description: Hypixel-style Bazaar with algorithmic dynamic pricing and full eco-suite item compatibility.
+depend:
+  - Vault
+softdepend:
+  - eco
+  - EcoItems
+  - EcoShop
+  - PlaceholderAPI
+  - EconGuard
+  - RoyalBank
+# JDBC + connection pool are downloaded at runtime by Paper's library loader.
+libraries:
+  - org.xerial:sqlite-jdbc:3.46.1.3
+  - com.zaxxer:HikariCP:5.1.0
+  - com.mysql:mysql-connector-j:8.4.0
+commands:
+  bazaar:
+    description: Open the Bazaar.
+    usage: /bazaar [reload|price <item>]
+    aliases: [bz, rbazaar]
+permissions:
+  royalbazaar.use:
+    description: Open and trade on the Bazaar.
+    default: true
+  royalbazaar.admin:
+    description: Reload config and inspect prices.
+    default: op

@@ -1,0 +1,11 @@
+target/
+*.class
+*.jar
+.idea/
+*.iml
+.DS_Store
+
+# Local runtime state (the plugin generates these on the server)
+bazaar.db
+bazaar.db-shm
+bazaar.db-wal

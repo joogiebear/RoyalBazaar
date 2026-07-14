@@ -1,0 +1,211 @@
+package com.mystipixel.royalbazaar.gui;
+
+import com.mystipixel.royalbazaar.config.CategoryConfig;
+import com.mystipixel.royalbazaar.gui.menu.ItemSpec;
+import com.mystipixel.royalbazaar.gui.menu.MenuEffect;
+import com.mystipixel.royalbazaar.gui.menu.MenuManager;
+import com.mystipixel.royalbazaar.gui.menu.MenuSlot;
+import com.mystipixel.royalbazaar.gui.menu.MenuTemplate;
+import com.mystipixel.royalbazaar.hooks.EcoHook;
+import com.mystipixel.royalbazaar.market.MarketItem;
+import com.mystipixel.royalbazaar.market.MarketManager;
+import com.mystipixel.royalbazaar.service.BazaarService;
+import com.mystipixel.royalbazaar.util.Text;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * Opens and renders the three bazaar menus and tracks each viewer's {@link OpenView}. Rendering:
+ * paint the mask filler, place fixed {@code slots} (binding their click effects), then — for the
+ * category menu — page the category's items into the mask's {@code 0} slots using the content template.
+ */
+public final class GuiManager {
+
+    private final MenuManager menus;
+    private final MarketManager market;
+    private final BazaarService service;
+    private final EcoHook eco;
+
+    private final Map<UUID, OpenView> views = new HashMap<>();
+
+    public GuiManager(MenuManager menus, MarketManager market, BazaarService service, EcoHook eco) {
+        this.menus = menus;
+        this.market = market;
+        this.service = service;
+        this.eco = eco;
+    }
+
+    public OpenView viewOf(Player player) {
+        return views.get(player.getUniqueId());
+    }
+
+    public void forget(Player player) {
+        views.remove(player.getUniqueId());
+    }
+
+    // ------------------------------------------------------------------ open
+
+    public void openMain(Player player) {
+        MenuTemplate tmpl = menus.get("bazaar_main");
+        OpenView view = new OpenView("bazaar_main", null, null);
+        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(tmpl.title()));
+        tmpl.applyFiller(inv);
+        placeFixedSlots(tmpl, inv, view, Map.of());
+        // Category icons are rendered as fixed slots authored in bazaar_main.yml (open_menu → bazaar_category).
+        // openInventory closes any prior view (firing forget()); store the new view afterwards.
+        player.openInventory(inv);
+        views.put(player.getUniqueId(), view);
+    }
+
+    public void openCategory(Player player, String categoryId, int page) {
+        CategoryConfig cat = market.category(categoryId);
+        if (cat == null) {
+            return;
+        }
+        MenuTemplate tmpl = menus.get("bazaar_category");
+        OpenView view = new OpenView("bazaar_category", categoryId, null);
+        view.setPage(Math.max(1, page));
+
+        Map<String, String> base = new HashMap<>();
+        base.put("rbazaar_category", cat.displayName());
+        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
+        tmpl.applyFiller(inv);
+        placeFixedSlots(tmpl, inv, view, base);
+        placeArrows(tmpl, inv, view);
+        paginateItems(tmpl, inv, view, player, cat);
+
+        player.openInventory(inv);
+        views.put(player.getUniqueId(), view);
+    }
+
+    public void openProduct(Player player, String itemId) {
+        MarketItem item = market.get(itemId);
+        if (item == null) {
+            return;
+        }
+        MenuTemplate tmpl = menus.get("bazaar_product");
+        OpenView view = new OpenView("bazaar_product", item.categoryId(), itemId);
+        Map<String, String> ph = service.placeholders(item, player);
+
+        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), ph)));
+        tmpl.applyFiller(inv);
+        placeFixedSlots(tmpl, inv, view, ph);
+
+        player.openInventory(inv);
+        views.put(player.getUniqueId(), view);
+    }
+
+    /** Re-render whatever the player currently has open (after a trade moves prices). */
+    public void refresh(Player player) {
+        OpenView v = views.get(player.getUniqueId());
+        if (v == null) {
+            return;
+        }
+        switch (v.menuId()) {
+            case "bazaar_category" -> openCategory(player, v.categoryId(), v.page());
+            case "bazaar_product" -> openProduct(player, v.itemId());
+            default -> openMain(player);
+        }
+    }
+
+    // ------------------------------------------------------------------ rendering helpers
+
+    private void placeFixedSlots(MenuTemplate tmpl, Inventory inv, OpenView view, Map<String, String> ph) {
+        for (MenuSlot slot : tmpl.slots()) {
+            if (slot.index() < 0 || slot.index() >= inv.getSize()) {
+                continue;
+            }
+            inv.setItem(slot.index(), slot.item().build(eco, ph, slot.lore()));
+            view.bind(slot.index(), resolveEffects(slot.leftClick(), ph), resolveEffects(slot.rightClick(), ph));
+        }
+    }
+
+    private void placeArrows(MenuTemplate tmpl, Inventory inv, OpenView view) {
+        // Backwards is owned here (shown only past page 1); forwards is owned by paginateItems,
+        // which knows whether a next page actually exists.
+        MenuTemplate.Arrow back = tmpl.backwards();
+        if (back != null && back.enabled() && view.page() > 1 && inBounds(back.index(), inv)) {
+            inv.setItem(back.index(), back.item().build(eco, Map.of(), List.of()));
+            view.bind(back.index(), List.of(new MenuEffect("rbazaar_prev_page", Map.of())), null);
+        }
+    }
+
+    private void paginateItems(MenuTemplate tmpl, Inventory inv, OpenView view, Player player, CategoryConfig cat) {
+        MenuTemplate.Content content = tmpl.content();
+        List<Integer> slots = tmpl.contentSlots();
+        if (content == null || slots.isEmpty()) {
+            return;
+        }
+        List<MarketItem> items = market.itemsIn(cat.id());
+        int perPage = slots.size();
+        int from = (view.page() - 1) * perPage;
+
+        for (int i = 0; i < perPage; i++) {
+            int idx = from + i;
+            int slot = slots.get(i);
+            if (idx >= items.size()) {
+                continue;
+            }
+            MarketItem item = items.get(idx);
+            Map<String, String> ph = service.placeholders(item, player);
+            ItemSpec spec = content.template();
+            inv.setItem(slot, spec.build(eco, ph, content.lore()));
+            view.bind(slot, resolveEffects(content.leftClick(), ph), resolveEffects(content.rightClick(), ph));
+        }
+
+        // Only expose the NEXT arrow (and bind it) if there is another page.
+        MenuTemplate.Arrow fwd = tmpl.forwards();
+        boolean hasNext = from + perPage < items.size();
+        if (fwd != null && fwd.enabled() && inBounds(fwd.index(), inv) && hasNext) {
+            inv.setItem(fwd.index(), fwd.item().build(eco, Map.of(), List.of()));
+            view.bind(fwd.index(), List.of(new MenuEffect("rbazaar_next_page", Map.of())), null);
+        }
+    }
+
+    /**
+     * Resolve {@code %placeholder%} tokens inside effect args against the render placeholder map,
+     * so effects on both fixed slots (product buy/sell buttons) and generated grid items get the
+     * concrete item id (and any other placeholder) baked in before they're bound to a slot.
+     */
+    private List<MenuEffect> resolveEffects(List<MenuEffect> effects, Map<String, String> ph) {
+        if (effects == null || effects.isEmpty()) {
+            return effects;
+        }
+        List<MenuEffect> out = new java.util.ArrayList<>(effects.size());
+        for (MenuEffect e : effects) {
+            Map<String, Object> args = new HashMap<>(e.args());
+            args.replaceAll((k, v) -> resolveValue(v, ph));
+            out.add(new MenuEffect(e.id(), args));
+        }
+        return out;
+    }
+
+    private Object resolveValue(Object value, Map<String, String> ph) {
+        if (!(value instanceof String s) || s.indexOf('%') < 0) {
+            return value;
+        }
+        for (Map.Entry<String, String> e : ph.entrySet()) {
+            s = s.replace("%" + e.getKey() + "%", e.getValue());
+        }
+        return s;
+    }
+
+    private boolean inBounds(int index, Inventory inv) {
+        return index >= 0 && index < inv.getSize();
+    }
+
+    private String applyMap(String input, Map<String, String> ph) {
+        String out = input == null ? "" : input;
+        for (Map.Entry<String, String> e : ph.entrySet()) {
+            out = out.replace("%" + e.getKey() + "%", e.getValue());
+        }
+        return out;
+    }
+}

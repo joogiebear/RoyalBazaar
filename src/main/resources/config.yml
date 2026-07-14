@@ -1,0 +1,37 @@
+# ============================================================
+#  RoyalBazaar
+#  Algorithmic dynamic-pricing bazaar for the eco suite.
+#
+#  Items live in categories/*.yml   (add/remove items there)
+#  Menus live in menus/*.yml        (EcoMenus-style layouts)
+# ============================================================
+
+engine:
+  # How often prices drift back toward their base (mean reversion) and stats roll. Seconds.
+  tick-interval-seconds: 60
+  # How often a price snapshot is written for graphs / 24h change. Seconds.
+  history-interval-seconds: 300
+  # How often dirty prices are flushed to disk (write-behind). Seconds.
+  flush-interval-seconds: 30
+  # Smoothing for the trend arrow (0..1). Lower = smoother, slower to flip.
+  trend-ema-alpha: 0.2
+
+trading:
+  # What to do when a buy can't fully fit in the player's inventory:
+  #   refund  - cancel the overflow, only buy what fits, charge for what fit
+  #   partial - same as refund (buy what fits)
+  #   drop    - buy the full amount, drop overflow at the player's feet
+  inventory-full: refund
+
+storage:
+  # SQLITE (default, single server) or MYSQL (shared across a network).
+  type: SQLITE
+  sqlite-file: bazaar.db
+  mysql:
+    host: localhost
+    port: 3306
+    database: royalbazaar
+    username: root
+    password: ""
+    properties: "useSSL=false"
+    pool-size: 10

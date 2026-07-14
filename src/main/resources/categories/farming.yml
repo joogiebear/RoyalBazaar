@@ -1,0 +1,27 @@
+# A bazaar category. The file name (farming) is the category id.
+# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+
+name: "&aFarming"
+icon: "minecraft:wheat"
+slot: 11
+
+defaults:
+  spread: 0.05          # 5% gap between buy and sell (your margin + inflation sink)
+  elasticity: 50000     # units to move the price by a factor of e (higher = more stable)
+  reversion_rate: 0.02  # fraction pulled back toward base each tick
+  floor_pct: 0.4        # price never below 40% of base
+  ceiling_pct: 3.0      # price never above 300% of base
+
+items:
+  wheat:
+    item: "minecraft:wheat"
+    base_price: 3.0
+  carrot:
+    item: "minecraft:carrot"
+    base_price: 3.0
+  potato:
+    item: "minecraft:potato"
+    base_price: 3.0
+  sugar_cane:
+    item: "minecraft:sugar_cane"
+    base_price: 4.0

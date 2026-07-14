@@ -1,0 +1,142 @@
+# RoyalBazaar - product page (buy / sell one item).
+# Since the server is always the counterparty (algorithmic pricing, infinite depth),
+# there are no buy/sell orders - just instant buy and instant sell at the live quote.
+
+title: "&8Bazaar &7› &f%rbazaar_item_display%"
+command: []
+rows: 6
+
+pages:
+  - page: 1
+    mask:
+      items:
+        - black_stained_glass_pane
+      pattern:
+        - "111111111"
+        - "100000001"
+        - "100000001"
+        - "100000001"
+        - "100000001"
+        - "111111111"
+
+slots:
+  # ---- the item + live stats ----
+  - item: "%rbazaar_item% name:\"%rbazaar_item_display%\""
+    lore:
+      - ""
+      - "&7Buy Price:  &a$%rbazaar_buy_price%"
+      - "&7Sell Price: &e$%rbazaar_sell_price%"
+      - "&7Spread: &f%rbazaar_spread_pct%%"
+      - ""
+      - "&7Trend: %rbazaar_trend% &7(%rbazaar_change_24h% 24h)"
+      - "&7Traded (24h): &f%rbazaar_volume_24h%"
+    location:
+      row: 1
+      column: 5
+      page: 1
+
+  # ---- BUY column ----
+  - item: lime_stained_glass_pane name:"&aBuy 1"
+    lore:
+      - "&7Cost: &a$%rbazaar_buy_cost_1%"
+    location:
+      row: 2
+      column: 3
+      page: 1
+    left-click:
+      - id: rbazaar_buy
+        args:
+          item: "%rbazaar_item%"
+          amount: 1
+
+  - item: lime_stained_glass_pane name:"&aBuy 64"
+    lore:
+      - "&7Cost: &a$%rbazaar_buy_cost_64%"
+    location:
+      row: 3
+      column: 3
+      page: 1
+    left-click:
+      - id: rbazaar_buy
+        args:
+          item: "%rbazaar_item%"
+          amount: 64
+
+  - item: lime_stained_glass_pane name:"&aBuy Custom Amount"
+    lore:
+      - "&7Type the amount in chat."
+    location:
+      row: 4
+      column: 3
+      page: 1
+    left-click:
+      - id: rbazaar_buy_prompt
+        args:
+          item: "%rbazaar_item%"
+
+  # ---- SELL column ----
+  - item: red_stained_glass_pane name:"&eSell 1"
+    lore:
+      - "&7Receive: &e$%rbazaar_sell_value_1%"
+    location:
+      row: 2
+      column: 7
+      page: 1
+    left-click:
+      - id: rbazaar_sell
+        args:
+          item: "%rbazaar_item%"
+          amount: 1
+
+  - item: red_stained_glass_pane name:"&eSell 64"
+    lore:
+      - "&7Receive: &e$%rbazaar_sell_value_64%"
+    location:
+      row: 3
+      column: 7
+      page: 1
+    left-click:
+      - id: rbazaar_sell
+        args:
+          item: "%rbazaar_item%"
+          amount: 64
+
+  - item: red_stained_glass_pane name:"&eSell All"
+    lore:
+      - "&7You have: &f%rbazaar_held_amount%"
+      - "&7Receive: &e$%rbazaar_sell_value_all%"
+    location:
+      row: 4
+      column: 7
+      page: 1
+    left-click:
+      - id: rbazaar_sell
+        args:
+          item: "%rbazaar_item%"
+          amount: all
+
+  # ---- nav ----
+  - item: arrow name:"&fBack"
+    lore: []
+    location:
+      row: 6
+      column: 4
+      page: 1
+    left-click:
+      - id: open_menu
+        args:
+          menu: bazaar_main
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: barrier name:"&cClose"
+    lore: []
+    location:
+      row: 6
+      column: 5
+      page: 1
+    left-click:
+      - id: close_inventory

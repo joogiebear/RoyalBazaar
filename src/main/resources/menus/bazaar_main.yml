@@ -1,0 +1,70 @@
+# RoyalBazaar - main menu (category picker).
+# A plain EcoMenus-style menu: fixed slots that open each category.
+# Add a category = add a slot here whose open_menu effect points at its id.
+
+title: "&8Bazaar"
+command: []
+rows: 6
+
+pages:
+  - page: 1
+    mask:
+      items:
+        - black_stained_glass_pane
+      pattern:
+        - "111111111"
+        - "100000001"
+        - "100000001"
+        - "100000001"
+        - "100000001"
+        - "111111111"
+
+slots:
+  - item: wheat name:"&aFarming"
+    lore:
+      - "&7Crops, seeds and enchanted farming drops."
+      - ""
+      - "&eClick to browse!"
+    location:
+      row: 2
+      column: 3
+      page: 1
+    left-click:
+      - id: open_menu
+        args:
+          menu: bazaar_category
+          category: farming
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: iron_pickaxe hide_attributes name:"&bMining"
+    lore:
+      - "&7Ores, ingots and gemstones."
+      - ""
+      - "&eClick to browse!"
+    location:
+      row: 2
+      column: 5
+      page: 1
+    left-click:
+      - id: open_menu
+        args:
+          menu: bazaar_category
+          category: mining
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: barrier name:"&cClose"
+    lore: []
+    location:
+      row: 6
+      column: 5
+      page: 1
+    left-click:
+      - id: close_inventory

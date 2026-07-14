@@ -1,0 +1,43 @@
+name: "&bMining"
+icon: "minecraft:iron_pickaxe"
+slot: 13
+
+defaults:
+  spread: 0.05
+  elasticity: 40000
+  reversion_rate: 0.02
+  floor_pct: 0.4
+  ceiling_pct: 3.0
+
+items:
+  # --- explicit base price (bazaar owns the number) ---
+  cobblestone:
+    item: "minecraft:cobblestone"
+    base_price: 2.0
+    elasticity: 100000    # staple — very stable
+  coal:
+    item: "minecraft:coal"
+    base_price: 4.0
+
+  # --- anchored to EcoShop (single source of truth) ---
+  # base_price: auto  -> EcoShop's buy value becomes the fair-value anchor
+  # npc_floor: true   -> bazaar sell can't drop below EcoShop's sell value (NPC is the floor)
+  # npc_ceiling: true -> bazaar buy can't rise above EcoShop's buy value (NPC is the ceiling)
+  iron_block:
+    item: "minecraft:iron_block"
+    base_price: auto
+    npc_floor: true
+    npc_ceiling: true
+  diamond_block:
+    item: "minecraft:diamond_block"
+    base_price: auto
+    npc_floor: true
+
+  # --- custom EcoItems (note the ecoitems: plural namespace) ---
+  enchanted_cobblestone:
+    item: "ecoitems:enchanted_cobblestone"
+    base_price: 320.0
+    ceiling_pct: 4.0
+  enchanted_iron_ingot:
+    item: "ecoitems:enchanted_iron_ingot"
+    base_price: 1200.0
