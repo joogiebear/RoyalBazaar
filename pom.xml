@@ -5,8 +5,7 @@
 
     <groupId>com.mystipixel</groupId>
     <artifactId>royalbazaar</artifactId>
-    <!-- eco-style YYYY.WW versioning. Release builds override this from the git tag. -->
-    <version>2026.28</version>
+    <version>2026.28.0</version>
     <packaging>jar</packaging>
 
     <name>RoyalBazaar</name>
