@@ -1,11 +1,18 @@
+# Build output
 target/
 *.class
 *.jar
+
+# IDE
 .idea/
 *.iml
-.DS_Store
+.vscode/
 
-# Local runtime state (the plugin generates these on the server)
-bazaar.db
-bazaar.db-shm
-bazaar.db-wal
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Local server runtime state (generated on the server, never committed)
+*.db
+*.db-shm
+*.db-wal
