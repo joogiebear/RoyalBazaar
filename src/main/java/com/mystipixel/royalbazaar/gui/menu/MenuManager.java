@@ -6,7 +6,7 @@ import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Loads (and, on first run, writes out) every {@code menus/*.yml} template. Reloadable. */
+/** Loads (and, on first run, writes out) every {@code gui/*.yml} template. Reloadable. */
 public final class MenuManager {
 
     private final JavaPlugin plugin;
@@ -25,9 +25,9 @@ public final class MenuManager {
     }
 
     private MenuTemplate load(String fileName, String defaultTitle, int defaultRows) {
-        File file = new File(plugin.getDataFolder(), "menus/" + fileName);
+        File file = new File(plugin.getDataFolder(), "gui/" + fileName);
         if (!file.exists()) {
-            plugin.saveResource("menus/" + fileName, false);
+            plugin.saveResource("gui/" + fileName, false);
         }
         return MenuTemplate.load(file, defaultTitle, defaultRows);
     }

@@ -3,7 +3,7 @@
 #  Algorithmic dynamic-pricing bazaar for the eco suite.
 #
 #  Items live in categories/*.yml   (add/remove items there)
-#  Menus live in menus/*.yml        (EcoMenus-style layouts)
+#  Menus live in gui/*.yml          (EcoMenus-style layouts)
 # ============================================================
 
 engine:

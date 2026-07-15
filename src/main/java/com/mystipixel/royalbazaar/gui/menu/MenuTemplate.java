@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A single menu loaded from a {@code menus/*.yml} file in the EcoMenus dialect: {@code title},
+ * A single menu loaded from a {@code gui/*.yml} file in the EcoMenus dialect: {@code title},
  * {@code rows}, page {@code mask} (items + pattern), fixed {@code slots} (each with a row/column
  * location and left/right-click effect lists), the paging arrows, and — RoyalBazaar's one extension —
  * a {@code content:} block whose template fills the mask's {@code 0} slots with live bazaar items.
