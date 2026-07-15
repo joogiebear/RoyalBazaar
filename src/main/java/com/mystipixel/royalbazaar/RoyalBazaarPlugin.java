@@ -50,6 +50,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         this.config = new PluginConfig(this);
+        new com.mystipixel.royalbazaar.config.ConfigValidator(this, config).validate();
         this.vault = new VaultHook();
 
         this.eco = new EcoHook();
