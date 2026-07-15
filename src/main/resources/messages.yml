@@ -1,0 +1,24 @@
+# ============================================================
+#  RoyalBazaar messages
+#  Colour codes use '&' (e.g. &a). Placeholders are in {curly braces}.
+#  A prefix is prepended to every message; leave it "" for none.
+# ============================================================
+prefix: ""
+
+players-only: "Only players can open the bazaar."
+no-permission: "&cNo permission."
+reloaded: "&aRoyalBazaar reloaded."
+price-usage: "&cUsage: /bazaar price <item>"
+unknown-item: "&cUnknown item: {item}"
+price-line: "&e{item}&7: buy &a${buy} &7sell &e${sell} &7(mid {mid})"
+
+prompt-amount: "&eType an amount in chat &7(or 'cancel')&e."
+cancelled: "&7Cancelled."
+not-a-number: "&cNot a number."
+amount-positive: "&cAmount must be positive."
+
+trade:
+  bought: "&aBought &f{amount} &afor &e${total}"
+  sold: "&aSold &f{amount} &afor &e${total}"
+  done: "&aDone: &f{amount} &7for &e${total}"
+  failed: "&c{reason}"

@@ -2,6 +2,8 @@ package com.mystipixel.royalbazaar.gui;
 
 import com.mystipixel.royalbazaar.gui.menu.MenuEffect;
 import com.mystipixel.royalbazaar.market.TradeResult;
+import com.mystipixel.royalbazaar.market.TradeSide;
+import com.mystipixel.royalbazaar.message.MessageManager;
 import com.mystipixel.royalbazaar.service.BazaarService;
 import com.mystipixel.royalbazaar.util.Text;
 import org.bukkit.Sound;
@@ -21,11 +23,13 @@ public final class EffectDispatcher {
     private final GuiManager gui;
     private final BazaarService service;
     private final AmountPrompt prompt;
+    private final MessageManager messages;
 
-    public EffectDispatcher(GuiManager gui, BazaarService service, AmountPrompt prompt) {
+    public EffectDispatcher(GuiManager gui, BazaarService service, AmountPrompt prompt, MessageManager messages) {
         this.gui = gui;
         this.service = service;
         this.prompt = prompt;
+        this.messages = messages;
     }
 
     public void run(Player player, List<MenuEffect> effects) {
@@ -65,7 +69,7 @@ public final class EffectDispatcher {
         String amountArg = e.argString("amount", "1");
         long amount = "all".equalsIgnoreCase(amountArg) ? Long.MAX_VALUE : e.argLong("amount", 1);
         TradeResult result = buy ? service.buy(player, item, amount) : service.sell(player, item, amount);
-        player.sendMessage(Text.chat(feedback(result)));
+        sendFeedback(player, result);
         gui.refresh(player); // prices moved — re-render
     }
 
@@ -88,13 +92,17 @@ public final class EffectDispatcher {
         }
     }
 
-    private String feedback(TradeResult r) {
+    private void sendFeedback(Player player, TradeResult r) {
         if (r.ok()) {
-            return r.side() == com.mystipixel.royalbazaar.market.TradeSide.BUY
-                    ? "&aBought &f" + r.filled() + " &afor &e$" + String.format("%,.2f", r.total())
-                    : "&aSold &f" + r.filled() + " &afor &e$" + String.format("%,.2f", r.total());
+            boolean bought = r.side() == TradeSide.BUY;
+            messages.send(player, bought ? "trade.bought" : "trade.sold",
+                    bought ? "&aBought &f{amount} &afor &e${total}" : "&aSold &f{amount} &afor &e${total}",
+                    java.util.Map.of("amount", String.valueOf(r.filled()),
+                            "total", String.format("%,.2f", r.total())));
+        } else {
+            messages.send(player, "trade.failed", "&c{reason}",
+                    java.util.Map.of("reason", r.message() == null ? "Trade failed." : r.message()));
         }
-        return "&c" + (r.message() == null ? "Trade failed." : r.message());
     }
 
     private String current(Player player) {

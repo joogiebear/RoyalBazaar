@@ -1,8 +1,8 @@
 package com.mystipixel.royalbazaar.gui;
 
 import com.mystipixel.royalbazaar.market.TradeResult;
+import com.mystipixel.royalbazaar.message.MessageManager;
 import com.mystipixel.royalbazaar.service.BazaarService;
-import com.mystipixel.royalbazaar.util.Text;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
@@ -28,12 +28,14 @@ public final class AmountPrompt implements Listener {
     private final JavaPlugin plugin;
     private final BazaarService service;
     private final GuiManager gui;
+    private final MessageManager messages;
     private final Map<UUID, Pending> pending = new ConcurrentHashMap<>();
 
-    public AmountPrompt(JavaPlugin plugin, BazaarService service, GuiManager gui) {
+    public AmountPrompt(JavaPlugin plugin, BazaarService service, GuiManager gui, MessageManager messages) {
         this.plugin = plugin;
         this.service = service;
         this.gui = gui;
+        this.messages = messages;
     }
 
     public void begin(Player player, String itemId, boolean buy) {
@@ -42,7 +44,7 @@ public final class AmountPrompt implements Listener {
         }
         pending.put(player.getUniqueId(), new Pending(itemId, buy));
         player.closeInventory();
-        player.sendMessage(Text.chat("&eType an amount in chat &7(or 'cancel')&e."));
+        messages.send(player, "prompt-amount", "&eType an amount in chat &7(or 'cancel')&e.");
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
@@ -55,7 +57,7 @@ public final class AmountPrompt implements Listener {
         event.setCancelled(true);
         String raw = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
         if (raw.equalsIgnoreCase("cancel")) {
-            player.sendMessage(Text.chat("&7Cancelled."));
+            messages.send(player, "cancelled", "&7Cancelled.");
             plugin.getServer().getScheduler().runTask(plugin, () -> gui.openProduct(player, p.itemId()));
             return;
         }
@@ -63,18 +65,23 @@ public final class AmountPrompt implements Listener {
         try {
             amount = Long.parseLong(raw.replace(",", ""));
         } catch (NumberFormatException e) {
-            player.sendMessage(Text.chat("&cNot a number."));
+            messages.send(player, "not-a-number", "&cNot a number.");
             return;
         }
         if (amount <= 0) {
-            player.sendMessage(Text.chat("&cAmount must be positive."));
+            messages.send(player, "amount-positive", "&cAmount must be positive.");
             return;
         }
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             TradeResult r = p.buy() ? service.buy(player, p.itemId(), amount) : service.sell(player, p.itemId(), amount);
-            player.sendMessage(Text.chat(r.ok()
-                    ? "&aDone: &f" + r.filled() + " &7for &e$" + String.format("%,.2f", r.total())
-                    : "&c" + (r.message() == null ? "Trade failed." : r.message())));
+            if (r.ok()) {
+                messages.send(player, "trade.done", "&aDone: &f{amount} &7for &e${total}",
+                        java.util.Map.of("amount", String.valueOf(r.filled()),
+                                "total", String.format("%,.2f", r.total())));
+            } else {
+                messages.send(player, "trade.failed", "&c{reason}",
+                        java.util.Map.of("reason", r.message() == null ? "Trade failed." : r.message()));
+            }
             gui.openProduct(player, p.itemId());
         });
     }

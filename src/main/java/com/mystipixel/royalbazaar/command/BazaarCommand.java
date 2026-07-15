@@ -5,7 +5,6 @@ import com.mystipixel.royalbazaar.gui.GuiManager;
 import com.mystipixel.royalbazaar.market.MarketItem;
 import com.mystipixel.royalbazaar.market.MarketManager;
 import com.mystipixel.royalbazaar.market.PricingEngine;
-import com.mystipixel.royalbazaar.util.Text;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -34,31 +33,37 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             if (sender instanceof Player player) {
                 gui.openMain(player);
             } else {
-                sender.sendMessage("Only players can open the bazaar.");
+                plugin.messages().send(sender, "players-only", "Only players can open the bazaar.");
             }
             return true;
         }
         switch (args[0].toLowerCase()) {
             case "reload" -> {
                 if (!sender.hasPermission("royalbazaar.admin")) {
-                    sender.sendMessage(Text.chat("&cNo permission."));
+                    plugin.messages().send(sender, "no-permission", "&cNo permission.");
                     return true;
                 }
                 plugin.reloadEverything();
-                sender.sendMessage(Text.chat("&aRoyalBazaar reloaded."));
+                plugin.messages().send(sender, "reloaded", "&aRoyalBazaar reloaded.");
             }
             case "price" -> {
                 if (args.length < 2) {
-                    sender.sendMessage(Text.chat("&cUsage: /bazaar price <item>"));
+                    plugin.messages().send(sender, "price-usage", "&cUsage: /bazaar price <item>");
                     return true;
                 }
                 MarketItem item = market.get(args[1]);
                 if (item == null) {
-                    sender.sendMessage(Text.chat("&cUnknown item: " + args[1]));
+                    plugin.messages().send(sender, "unknown-item", "&cUnknown item: {item}",
+                            java.util.Map.of("item", args[1]));
                     return true;
                 }
-                sender.sendMessage(Text.chat("&e" + item.id() + "&7: buy &a$" + fmt(PricingEngine.buyPrice(item))
-                        + " &7sell &e$" + fmt(PricingEngine.sellPrice(item)) + " &7(mid " + fmt(item.mid()) + ")"));
+                plugin.messages().send(sender, "price-line",
+                        "&e{item}&7: buy &a${buy} &7sell &e${sell} &7(mid {mid})",
+                        java.util.Map.of(
+                                "item", item.id(),
+                                "buy", fmt(PricingEngine.buyPrice(item)),
+                                "sell", fmt(PricingEngine.sellPrice(item)),
+                                "mid", fmt(item.mid())));
             }
             default -> {
                 if (sender instanceof Player player) {

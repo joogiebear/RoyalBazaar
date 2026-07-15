@@ -31,6 +31,7 @@ import java.util.logging.Level;
 public final class RoyalBazaarPlugin extends JavaPlugin {
 
     private PluginConfig config;
+    private com.mystipixel.royalbazaar.message.MessageManager messages;
     private VaultHook vault;
     private EcoHook eco;
     private EcoShopHook ecoShop;
@@ -51,6 +52,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     public void onEnable() {
         this.config = new PluginConfig(this);
         new com.mystipixel.royalbazaar.config.ConfigValidator(this, config).validate();
+        this.messages = new com.mystipixel.royalbazaar.message.MessageManager(this);
         this.vault = new VaultHook();
 
         this.eco = new EcoHook();
@@ -102,8 +104,8 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         this.menus = new MenuManager(this);
         this.gui = new GuiManager(menus, market, service, eco);
 
-        AmountPrompt prompt = new AmountPrompt(this, service, gui);
-        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt);
+        AmountPrompt prompt = new AmountPrompt(this, service, gui, messages);
+        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages);
         getServer().getPluginManager().registerEvents(new BazaarGuiListener(gui, dispatcher), this);
         getServer().getPluginManager().registerEvents(prompt, this);
 
@@ -218,9 +220,14 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         }
     }
 
+    public com.mystipixel.royalbazaar.message.MessageManager messages() {
+        return messages;
+    }
+
     /** Reload config, categories and menus. Storage-backend changes still need a restart. */
     public void reloadEverything() {
         config.reload();
+        messages.reload();
         this.ecoShop = new EcoShopHook(getDataFolder().getParentFile(), getLogger());
         market.load(config.loadCategories(), config.emaAlpha(), ecoShop);
         try {
