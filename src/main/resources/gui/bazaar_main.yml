@@ -25,10 +25,8 @@ slots:
       - "&7Crops, seeds and enchanted farming drops."
       - ""
       - "&eClick to browse!"
-    location:
-      row: 2
-      column: 3
-      page: 1
+    row: 2
+    column: 3
     left-click:
       - id: open_menu
         args:
@@ -45,10 +43,8 @@ slots:
       - "&7Ores, ingots and gemstones."
       - ""
       - "&eClick to browse!"
-    location:
-      row: 2
-      column: 5
-      page: 1
+    row: 2
+    column: 5
     left-click:
       - id: open_menu
         args:
@@ -62,9 +58,7 @@ slots:
 
   - item: barrier name:"&cClose"
     lore: []
-    location:
-      row: 6
-      column: 5
-      page: 1
+    row: 6
+    column: 5
     left-click:
       - id: close_inventory

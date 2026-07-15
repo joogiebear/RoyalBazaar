@@ -2,12 +2,17 @@ package com.mystipixel.royalbazaar.gui.menu;
 
 import com.mystipixel.royalbazaar.hooks.EcoHook;
 import com.mystipixel.royalbazaar.util.Text;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Parses the EcoMenus inline item syntax, e.g.
@@ -16,18 +21,28 @@ import java.util.List;
  * ({@code hide_enchants}, {@code hide_attributes}) and {@code key:"value"} modifiers ({@code name}).
  * Lore is supplied separately from the slot's {@code lore:} list.
  *
+ * <p>Player heads follow the same convention the eco suite uses:
+ * <pre>player_head texture:&lt;base64&gt;      # a custom head from a base64 texture value
+ * player_head head:&lt;player&gt;             # a specific player's head (e.g. head:%player%)</pre>
+ * Custom eco items that are themselves heads render their own texture automatically (via eco).
+ *
  * <p>Modifiers may contain {placeholders}; call {@link #build} with the placeholder map at render time.
  */
 public final class ItemSpec {
 
     private final String lookupId;
     private final String rawName;      // may be null
+    private final String texture;      // base64 head texture, may be null
+    private final String head;         // player-head owner name/%placeholder%, may be null
     private final boolean hideEnchants;
     private final boolean hideAttributes;
 
-    private ItemSpec(String lookupId, String rawName, boolean hideEnchants, boolean hideAttributes) {
+    private ItemSpec(String lookupId, String rawName, String texture, String head,
+                     boolean hideEnchants, boolean hideAttributes) {
         this.lookupId = lookupId;
         this.rawName = rawName;
+        this.texture = texture;
+        this.head = head;
         this.hideEnchants = hideEnchants;
         this.hideAttributes = hideAttributes;
     }
@@ -38,11 +53,13 @@ public final class ItemSpec {
 
     public static ItemSpec parse(String raw) {
         if (raw == null || raw.isBlank()) {
-            return new ItemSpec("minecraft:stone", null, false, false);
+            return new ItemSpec("minecraft:stone", null, null, null, false, false);
         }
         List<String> tokens = tokenize(raw.trim());
         String lookup = tokens.isEmpty() ? "minecraft:stone" : tokens.get(0);
         String name = null;
+        String texture = null;
+        String head = null;
         boolean hideEnch = false;
         boolean hideAttr = false;
         for (int i = 1; i < tokens.size(); i++) {
@@ -53,17 +70,20 @@ public final class ItemSpec {
                 hideAttr = true;
             } else if (t.regionMatches(true, 0, "name:", 0, 5)) {
                 name = stripQuotes(t.substring(5));
+            } else if (t.regionMatches(true, 0, "texture:", 0, 8)) {
+                texture = stripQuotes(t.substring(8));
+            } else if (t.regionMatches(true, 0, "head:", 0, 5)) {
+                head = stripQuotes(t.substring(5));
             }
-            // other key:value modifiers (unbreaking:1, etc.) can be added here as needed
         }
-        return new ItemSpec(lookup, name, hideEnch, hideAttr);
+        return new ItemSpec(lookup, name, texture, head, hideEnch, hideAttr);
     }
 
     /** Build the stack, resolving the lookup via eco and filling {placeholders} in name/lore. */
-    public ItemStack build(EcoHook eco, java.util.Map<String, String> placeholders, List<String> lore) {
+    public ItemStack build(EcoHook eco, Map<String, String> placeholders, List<String> lore) {
         ItemStack item = eco.resolve(apply(lookupId, placeholders), 1);
         if (item == null) {
-            item = new ItemStack(org.bukkit.Material.STONE);
+            item = new ItemStack(Material.STONE);
         }
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
@@ -83,9 +103,28 @@ public final class ItemSpec {
             if (hideAttributes) {
                 meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             }
+            applyHeadTexture(item, meta, placeholders);
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    /** Apply a base64 {@code texture:} or a {@code head:} owner to a player-head, the eco-suite way. */
+    private void applyHeadTexture(ItemStack item, ItemMeta meta, Map<String, String> placeholders) {
+        if (item.getType() != Material.PLAYER_HEAD || !(meta instanceof SkullMeta skull)) {
+            return;
+        }
+        try {
+            if (texture != null && !texture.isBlank()) {
+                com.destroystokyo.paper.profile.PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID());
+                profile.setProperty(new com.destroystokyo.paper.profile.ProfileProperty("textures", texture));
+                skull.setPlayerProfile(profile);
+            } else if (head != null && !head.isBlank()) {
+                skull.setOwningPlayer(Bukkit.getOfflinePlayer(apply(head, placeholders)));
+            }
+        } catch (Throwable ignored) {
+            // a malformed texture must never break the menu
+        }
     }
 
     // ---- token helpers ----

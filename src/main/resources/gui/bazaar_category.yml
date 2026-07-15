@@ -9,16 +9,14 @@ rows: 6
 forwards-arrow:
   item: arrow name:"&fNext Page"
   enabled: true
-  location:
-    row: 6
-    column: 8
+  row: 6
+  column: 8
 
 backwards-arrow:
   item: arrow name:"&fPrevious Page"
   enabled: true
-  location:
-    row: 6
-    column: 2
+  row: 6
+  column: 2
 
 pages:
   - page: 1
@@ -52,10 +50,8 @@ content:
 slots:
   - item: arrow name:"&fBack"
     lore: []
-    location:
-      row: 6
-      column: 4
-      page: 1
+    row: 6
+    column: 4
     left-click:
       - id: open_menu
         args:
@@ -68,9 +64,7 @@ slots:
 
   - item: barrier name:"&cClose"
     lore: []
-    location:
-      row: 6
-      column: 5
-      page: 1
+    row: 6
+    column: 5
     left-click:
       - id: close_inventory

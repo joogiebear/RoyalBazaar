@@ -137,7 +137,7 @@ public final class MenuTemplate {
         if (itemObj == null) {
             return null;
         }
-        int index = locationIndex(raw.get("location"), size);
+        int index = slotIndex(raw, size);
         if (index < 0) {
             return null;
         }
@@ -157,22 +157,42 @@ public final class MenuTemplate {
         if (sec == null) {
             return null;
         }
-        int index = locationIndex(sec.get("location"), size);
-        return new Arrow(ItemSpec.parse(sec.getString("item", "arrow")), index, sec.getBoolean("enabled", true));
+        Object rowObj = sec.get("row");
+        Object colObj = sec.get("column");
+        if (rowObj == null && colObj == null) {
+            ConfigurationSection loc = sec.getConfigurationSection("location");
+            if (loc != null) {
+                rowObj = loc.get("row");
+                colObj = loc.get("column");
+            }
+        }
+        return new Arrow(ItemSpec.parse(sec.getString("item", "arrow")), toIndex(rowObj, colObj, size),
+                sec.getBoolean("enabled", true));
     }
 
-    /** Resolve an EcoMenus {@code location: {row, column}} (1-based) into a 0-based inventory index. */
-    private static int locationIndex(Object locationObj, int size) {
-        int row = 1;
-        int column = 1;
-        if (locationObj instanceof ConfigurationSection cs) {
-            row = cs.getInt("row", 1);
-            column = cs.getInt("column", 1);
-        } else if (locationObj instanceof Map<?, ?> m) {
-            row = intOf(m.get("row"), 1);
-            column = intOf(m.get("column"), 1);
+    /**
+     * Resolve a slot's 1-based {@code row}/{@code column} into a 0-based inventory index. Row/column sit
+     * directly on the slot (the eco-menus convention); a legacy nested {@code location: {row, column}}
+     * is still accepted as a fallback.
+     */
+    private static int slotIndex(Map<?, ?> raw, int size) {
+        Object rowObj = raw.get("row");
+        Object colObj = raw.get("column");
+        if (rowObj == null && colObj == null) {
+            Object loc = raw.get("location");
+            if (loc instanceof ConfigurationSection cs) {
+                rowObj = cs.get("row");
+                colObj = cs.get("column");
+            } else if (loc instanceof Map<?, ?> m) {
+                rowObj = m.get("row");
+                colObj = m.get("column");
+            }
         }
-        int index = (row - 1) * 9 + (column - 1);
+        return toIndex(rowObj, colObj, size);
+    }
+
+    private static int toIndex(Object rowObj, Object colObj, int size) {
+        int index = (intOf(rowObj, 1) - 1) * 9 + (intOf(colObj, 1) - 1);
         return index >= 0 && index < size ? index : -1;
     }
 
