@@ -1,3 +1,8 @@
+## 2026.29.1 — 2026-07-17
+
+### 🐛 Fixes
+- pass the Modrinth payload as a file, not inline (`a380ef0`)
+
 ## 2026.29.0 — 2026-07-17
 
 ### ✨ Features
