@@ -1,5 +1,9 @@
 """Generate the EcoItems configs Hypixel's bazaar expects but this pack is missing.
 
+Lore carries flavour and the recipe only -- never prices. eco re-injects an item's lore into
+any GUI, so baked prices duplicate the bazaar menu's own live lines (and vanilla items, having
+no config, show only one set). They also go stale the moment the market moves. See repricer.py.
+
 Written to match the existing pack byte-for-byte in shape: same 5x32 recipe grid, same lore
 skeleton, same shop-pricing block. Prices come from the same unit model as the bazaar
 (gen_bazaar.py), so a new item can't be the one that's mispriced.
@@ -43,10 +47,6 @@ TEMPLATE = """item:
   - ''
   - '&8A compact item used in advanced crafting.'
   - '&8Crafted from 160 {base_name}'
-  - ''
-  - '&7Bazaar Buy:  &6~{buy:,} coins'
-  - '&7Bazaar Sell: &6~{sell:,} coins'
-  - '&8Prices float with supply and demand.'
   craftable: true
   recipe-give-amount: 1
   crafting-permission: royalmc.ecoitems.craft.{iid}

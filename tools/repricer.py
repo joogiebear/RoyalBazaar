@@ -1,8 +1,16 @@
-"""Re-price EcoItems' shop-pricing + lore to agree with the new bazaar values.
+"""Re-price EcoItems' shop-pricing block to agree with the bazaar's values.
 
-shop-pricing is inert metadata (nothing reads it), but its numbers are duplicated into each
-item's LORE, which players DO see. Leaving them at the old generated values would have the
-tooltip contradict the bazaar. Buy/sell are set to the bazaar's spread around base_price.
+shop-pricing is inert metadata -- nothing in the eco suite reads it. It's kept in sync purely as
+documentation of what each item is worth, so the configs don't contradict the bazaar.
+
+DO NOT write prices into item LORE. An earlier version did, and it backfired twice:
+  1. eco re-injects an item's own lore into any GUI, so the baked lines appeared *inside* the
+     bazaar menu on top of its live Buy/Sell lines -- while vanilla items, having no EcoItems
+     config, showed only one set. Eco and vanilla entries rendered inconsistently.
+  2. Lore is a static snapshot. The market floats; the text doesn't. A tooltip reading
+     "~252 coins" forever is worse than no tooltip.
+The bazaar menu is the single source of live prices (as on Hypixel). Flavour and recipe lore
+("Crafted from 160 Cobblestone") is fine -- it never goes stale.
 
 Runs on the server, in-place, with a .bak-reprice backup per file.
 """
@@ -23,12 +31,9 @@ for f in glob.glob(ROOT + '/**/*.yml', recursive=True):
     txt = open(f, encoding='utf-8').read()
     orig = txt
 
-    # 1. shop-pricing block
+    # shop-pricing block only -- see the module docstring for why lore is deliberately left alone.
     txt = re.sub(r'(^shop-pricing:\n(?:.*\n)*?  buy: )[\d.]+', lambda m: m.group(1) + str(buy), txt, count=1, flags=re.M)
     txt = re.sub(r'(^shop-pricing:\n(?:.*\n)*?  sell: )[\d.]+', lambda m: m.group(1) + str(sell), txt, count=1, flags=re.M)
-    # 2. the lore the player actually reads
-    txt = re.sub(r"(- '&7Buy Price: &6)[\d,]+( coins')", lambda m: f'{m.group(1)}{buy:,}{m.group(2)}', txt, count=1)
-    txt = re.sub(r"(- '&7Sell Price: &6)[\d,]+( coins')", lambda m: f'{m.group(1)}{sell:,}{m.group(2)}', txt, count=1)
 
     if txt != orig:
         open(f + '.bak-reprice', 'w', encoding='utf-8').write(orig)
