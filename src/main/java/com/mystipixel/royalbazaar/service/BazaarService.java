@@ -188,20 +188,20 @@ public final class BazaarService {
         Map<String, String> p = new HashMap<>();
         p.put("rbazaar_item", item.id());
         p.put("rbazaar_item_display", displayNameFor(item));
-        p.put("rbazaar_buy_price", vault.format(PricingEngine.buyPrice(item)));
-        p.put("rbazaar_sell_price", vault.format(PricingEngine.sellPrice(item)));
+        p.put("rbazaar_buy_price", vault.formatPrice(PricingEngine.buyPrice(item)));
+        p.put("rbazaar_sell_price", vault.formatPrice(PricingEngine.sellPrice(item)));
         p.put("rbazaar_spread_pct", String.format("%.1f", item.spread() * 100));
-        p.put("rbazaar_buy_cost_1", vault.format(PricingEngine.buyCost(item, 1)));
-        p.put("rbazaar_buy_cost_64", vault.format(PricingEngine.buyCost(item, 64)));
-        p.put("rbazaar_sell_value_1", vault.format(PricingEngine.sellProceeds(item, 1)));
-        p.put("rbazaar_sell_value_64", vault.format(PricingEngine.sellProceeds(item, 64)));
+        p.put("rbazaar_buy_cost_1", vault.formatPrice(PricingEngine.buyCost(item, 1)));
+        p.put("rbazaar_buy_cost_64", vault.formatPrice(PricingEngine.buyCost(item, 64)));
+        p.put("rbazaar_sell_value_1", vault.formatPrice(PricingEngine.sellProceeds(item, 1)));
+        p.put("rbazaar_sell_value_64", vault.formatPrice(PricingEngine.sellProceeds(item, 64)));
         p.put("rbazaar_volume_24h", String.valueOf(item.volume().bought24h() + item.volume().sold24h()));
         p.put("rbazaar_change_24h", changePct(item));
         p.put("rbazaar_trend", trendArrow(item));
         if (viewer != null) {
             int held = eco.countHeld(viewer, item.id());
             p.put("rbazaar_held_amount", String.valueOf(held));
-            p.put("rbazaar_sell_value_all", vault.format(PricingEngine.sellProceeds(item, Math.max(1, held))));
+            p.put("rbazaar_sell_value_all", vault.formatPrice(PricingEngine.sellProceeds(item, Math.max(1, held))));
         }
         return p;
     }
@@ -225,8 +225,8 @@ public final class BazaarService {
         p.put("rbazaar_group_size", String.valueOf(items.size()));
 
         if (items.isEmpty()) {
-            p.put("rbazaar_group_min_buy", vault.format(0));
-            p.put("rbazaar_group_max_buy", vault.format(0));
+            p.put("rbazaar_group_min_buy", vault.formatPrice(0));
+            p.put("rbazaar_group_max_buy", vault.formatPrice(0));
             p.put("rbazaar_group_volume_24h", "0");
             p.put("rbazaar_group_trend", "&7-");
             p.put("rbazaar_group_change_24h", "0.0%");
@@ -246,8 +246,8 @@ public final class BazaarService {
             weightedNow += item.mid();
             weightedThen += item.midYesterday() > 0 ? item.midYesterday() : item.mid();
         }
-        p.put("rbazaar_group_min_buy", vault.format(min));
-        p.put("rbazaar_group_max_buy", vault.format(max));
+        p.put("rbazaar_group_min_buy", vault.formatPrice(min));
+        p.put("rbazaar_group_max_buy", vault.formatPrice(max));
         p.put("rbazaar_group_volume_24h", String.valueOf(volume));
 
         // Aggregate the group's move from the summed mids, so one cheap item can't swing the arrow.
