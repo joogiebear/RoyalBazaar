@@ -20,9 +20,13 @@ SHOP['iron_block'] = {'buy': 270.0, 'sell': 72.0}
 items = {}
 for f in glob.glob('out/categories/*.yml'):
     txt = open(f, encoding='utf-8').read()
+    # Entry shape: id, item, base_price, [ceiling_pct], [floor_pct], [group], then the
+    # "# 160x cobblestone @ 1.50/unit" provenance comment the generator writes.
     for m in re.finditer(
             r'^  (\w+):\n    item: "([^"]+)"\n    base_price: ([\d.]+)\n'
+            r'(?:    elasticity: [\d.]+\n)?'
             r'(?:    ceiling_pct: ([\d.]+)\n)?(?:    floor_pct: ([\d.]+)\n)?'
+            r'(?:    group: \w+\n)?'
             r'    # ([\d.]+)x (\w+) @ ([\d.]+)/unit', txt, re.M):
         iid, _, base_price, ceil, floor, mult, base, unit = m.groups()
         items[iid] = {'base_price': float(base_price), 'ceiling': float(ceil or 3.0),

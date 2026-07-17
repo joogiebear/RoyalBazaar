@@ -1,10 +1,30 @@
-# Bazaar pricing tools
+# Bazaar pricing & layout tools
 
 Generates and audits `categories/*.yml` from an EcoItems + EcoShop catalogue, so a few hundred
 items can be priced consistently instead of by hand. Written for the RoyalMC server; the pricing
 model is general, the curated tables are not.
 
 These are **offline authoring tools**, not part of the plugin. Nothing here ships in the jar.
+
+| file | what it does |
+|---|---|
+| `hypixel_layout.py` | The structure: 5 categories, 63 item families, declared by hand. |
+| `gen_hypixel.py` | Prices that layout and writes `out/categories/*.yml`. |
+| `gen_newitems.py` | Writes EcoItems configs for items the pack is missing. |
+| `verify_bazaar.py` | **Audits for money printers. Run after every price change.** |
+| `repricer.py` | Syncs EcoItems `shop-pricing` + lore to the generated prices. |
+
+## Why the layout is declared, not derived
+
+Hypixel's groups are editorial. "Wheat & Seeds" merges two materials and holds five products;
+"Chicken & Feather" bundles chicken, egg, feather and cake. No rule over base-items produces
+those names or those merges — an earlier attempt to derive families from `base-item` gave 29
+singleton groups for tools and a group literally named "Iron Ingot". So the structure lives in
+`hypixel_layout.py` as data, and `gen_hypixel.py` prices whatever it's handed.
+
+`gen_hypixel.py` reports **unassigned items** at the end. That report is the safety net: an item
+in the catalogue but absent from the layout would silently vanish from the bazaar. It must print
+`no unassigned items`.
 
 ## The pricing model
 
@@ -48,7 +68,9 @@ Extract the catalogue from a running server, then generate and audit:
 #    EcoShop prices     -> ecoshop_prices.csv (shop|id|item|buy|sell)
 #    (see the extraction one-liners in the project notes; both are plain CSV)
 
-python gen_bazaar.py        # writes out/categories/*.yml
+python gen_newitems.py      # optional: writes any missing EcoItems configs, deploy them first,
+                            # then re-extract eco_prices.csv so they appear in the catalogue
+python gen_hypixel.py       # writes out/categories/*.yml -- check the unassigned report
 python verify_bazaar.py     # audits for money printers -- must print ALL CRITICAL CHECKS PASS
 ```
 
