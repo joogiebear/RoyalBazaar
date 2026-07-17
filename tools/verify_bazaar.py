@@ -18,22 +18,34 @@ SHOP['diamond_block'] = {'buy': 1980.0, 'sell': 495.0}
 SHOP['iron_block'] = {'buy': 270.0, 'sell': 72.0}
 
 items = {}
+skipped = []
 for f in glob.glob('out/categories/*.yml'):
     txt = open(f, encoding='utf-8').read()
-    # Entry shape: id, item, base_price, [ceiling_pct], [floor_pct], [group], then the
-    # "# 160x cobblestone @ 1.50/unit" provenance comment the generator writes.
-    for m in re.finditer(
-            r'^  (\w+):\n    item: "([^"]+)"\n    base_price: ([\d.]+)\n'
-            r'(?:    elasticity: [\d.]+\n)?'
-            r'(?:    ceiling_pct: ([\d.]+)\n)?(?:    floor_pct: ([\d.]+)\n)?'
-            r'(?:    group: \w+\n)?'
-            r'    # ([\d.]+)x (\w+) @ ([\d.]+)/unit', txt, re.M):
-        iid, _, base_price, ceil, floor, mult, base, unit = m.groups()
-        items[iid] = {'base_price': float(base_price), 'ceiling': float(ceil or 3.0),
-                      'floor': float(floor or 0.4), 'mult': float(mult),
-                      'base': base, 'unit': float(unit), 'cat': f}
+    # Parse each entry as a block of "key: value" lines rather than a fixed line order.
+    # An ordered regex silently DROPS entries when the generator adds a field (elasticity and
+    # npc_* have each done it), and a dropped entry is an unaudited one -- exactly the item a
+    # money-printer check must not miss. Order-independent parsing fails loudly instead.
+    for m in re.finditer(r'^  (\w+):\n((?:    [^\n]*\n)+)', txt, re.M):
+        iid, body = m.group(1), m.group(2)
+        if 'item: ' not in body:
+            continue                       # a groups: entry, not an item
+        prov = re.search(r'#\s*([\d.]+)x (\w+) @ ([\d.]+)/unit', body)
+        base_price = re.search(r'base_price: ([\d.]+)', body)
+        if not (prov and base_price):
+            skipped.append((iid, 'base_price: auto' if 'base_price: auto' in body else 'no provenance'))
+            continue
+        ceil = re.search(r'ceiling_pct: ([\d.]+)', body)
+        floor = re.search(r'floor_pct: ([\d.]+)', body)
+        items[iid] = {'base_price': float(base_price.group(1)),
+                      'ceiling': float(ceil.group(1)) if ceil else 3.0,
+                      'floor': float(floor.group(1)) if floor else 0.4,
+                      'mult': float(prov.group(1)), 'base': prov.group(2),
+                      'unit': float(prov.group(3)), 'cat': f}
 
-print(f'audited {len(items)} bazaar items\n')
+print(f'audited {len(items)} bazaar items')
+if skipped:
+    print(f'NOT audited ({len(skipped)}): ' + ', '.join(f'{i} ({why})' for i, why in skipped))
+print()
 
 fails = 0
 

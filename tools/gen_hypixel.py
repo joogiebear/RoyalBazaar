@@ -58,16 +58,13 @@ CURATED = {
     'spruce_log': 4.5, 'tropical_fish': 12.0, 'sponge': 30.0,
 }
 
-# Raw vanilla materials the bazaar trades alongside the compressed forms.
-RAW_ITEMS = {
-    'wheat': 'minecraft:wheat', 'carrot': 'minecraft:carrot', 'potato': 'minecraft:potato',
-    'sugar_cane': 'minecraft:sugar_cane', 'cobblestone': 'minecraft:cobblestone',
-    'coal': 'minecraft:coal', 'iron_block': 'minecraft:iron_block',
-    'diamond_block': 'minecraft:diamond_block',
-}
+# Raw vanilla materials. Any layout id that isn't an EcoItem is treated as one, so the layout can
+# just name `iron_ingot` and get minecraft:iron_ingot priced at its unit value -- Hypixel leads
+# every group with the raw material, and hardcoding a list of them doesn't scale to 60+ groups.
 RAW_UNIT = {'sugar_cane': 4.0}          # hand-set, preserved from the original farming.yml
-RAW_EXTRA = {'cobblestone': '    elasticity: 100000'}
-RAW_AUTO = {'iron_block', 'diamond_block'}   # anchor to EcoShop instead of a fixed base_price
+RAW_EXTRA = {'cobblestone': '    elasticity: 100000'}   # staple: damp the price swings
+# Layout id -> vanilla item id, where they differ.
+RAW_ITEM_ID = {'slimeball': 'minecraft:slime_ball'}
 
 # --- catalogue ---
 ECO = {}
@@ -101,19 +98,15 @@ def fmt(v):
 
 
 def emit_item(L, iid, group):
-    """Append one item entry. Returns False (and logs) if it can't be priced."""
-    if iid in RAW_ITEMS:                       # raw vanilla material
-        base = iid
+    """Append one item entry. Returns (False, why) if it can't be priced."""
+    meta = ECO.get(iid)
+    if meta is None:                           # not an EcoItem -> a raw vanilla material
         unit = RAW_UNIT.get(iid) or unit_of(iid)[0]
         if unit is None:
-            return False, f'raw {iid}: no unit value'
+            return False, f'raw {iid}: no unit value (add it to CURATED)'
+        ceiling, floor = limits(iid, unit)
         L.append(f'  {iid}:')
-        L.append(f'    item: "{RAW_ITEMS[iid]}"')
-        if iid in RAW_AUTO:
-            L += ['    base_price: auto', '    npc_floor: true', '    npc_ceiling: true',
-                  f'    group: {group}']
-            return True, None
-        ceiling, floor = limits(base, unit)
+        L.append(f'    item: "{RAW_ITEM_ID.get(iid, "minecraft:" + iid)}"')
         L.append(f'    base_price: {fmt(unit)}')
         if iid in RAW_EXTRA:
             L.append(RAW_EXTRA[iid])
@@ -121,15 +114,19 @@ def emit_item(L, iid, group):
             L.append(f'    ceiling_pct: {fmt(ceiling)}')
         if abs(floor - FLOOR_FLOOR) > 1e-9:
             L.append(f'    floor_pct: {fmt(floor)}')
+        if iid in SHOP:
+            # Pin the band to the NPC at runtime, not just at generation time: these _pct values
+            # bake in today's EcoShop prices, and editing EcoShop later would silently leave them
+            # stale (and could reopen a craft loop). npc_* re-reads EcoShop on every load, and is
+            # strictly tighter than the computed pct, so the audit stays a conservative bound.
+            L.append('    npc_floor: true')
+            L.append('    npc_ceiling: true')
         L.append(f'    group: {group}')
         # Provenance comment, same shape as compressed items -- verify_bazaar.py keys on it,
         # so without this the raws would silently skip the money-printer audit.
-        L.append(f'    # 1x {base} @ {fmt(unit)}/unit (raw)')
+        L.append(f'    # 1x {iid} @ {fmt(unit)}/unit (raw)')
         return True, None
 
-    meta = ECO.get(iid)
-    if not meta:
-        return False, f'{iid}: not in the EcoItems catalogue'
     unit, src = unit_of(meta['base'])
     if unit is None:
         return False, f'{iid}: no unit value for base {meta["base"]!r}'
