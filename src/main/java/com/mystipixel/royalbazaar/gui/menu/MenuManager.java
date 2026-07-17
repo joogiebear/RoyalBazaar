@@ -21,6 +21,7 @@ public final class MenuManager {
         byId.clear();
         byId.put("bazaar_main", load("bazaar_main.yml", "&8Bazaar", 6));
         byId.put("bazaar_category", load("bazaar_category.yml", "&8Bazaar", 6));
+        byId.put("bazaar_group", load("bazaar_group.yml", "&8Bazaar", 6));
         byId.put("bazaar_product", load("bazaar_product.yml", "&8Bazaar", 6));
     }
 

@@ -1,0 +1,74 @@
+# RoyalBazaar - group grid (category › group › product).
+# Shown when a category declares a groups: block and the player clicks one of its group icons.
+# The "0" slots in the mask are the live product area: the group's items flow in here
+# automatically and page themselves. Never edit item slots by hand.
+
+title: "&8Bazaar &7› &f%rbazaar_category% &7› &f%rbazaar_group_name%"
+command: []
+rows: 6
+
+forwards-arrow:
+  item: arrow name:"&fNext Page"
+  enabled: true
+  row: 6
+  column: 8
+
+backwards-arrow:
+  item: arrow name:"&fPrevious Page"
+  enabled: true
+  row: 6
+  column: 2
+
+pages:
+  - page: 1
+    mask:
+      items:
+        - black_stained_glass_pane
+      pattern:
+        - "111111111"
+        - "100000001"
+        - "100000001"
+        - "100000001"
+        - "100000001"
+        - "111111111"
+
+# Fills the "0" slots. One entry per product in this group.
+content:
+  template:
+    item: "%rbazaar_item%"
+    name: "%rbazaar_item_display%"
+    lore:
+      - "&7Buy:  &a$%rbazaar_buy_price%"
+      - "&7Sell: &e$%rbazaar_sell_price%"
+      - "&7Trend: %rbazaar_trend% &7(%rbazaar_change_24h% 24h)"
+      - ""
+      - "&eLeft-click &7to open."
+    left-click:
+      - id: rbazaar_open_product
+        args:
+          item: "%rbazaar_item%"
+
+slots:
+  # Back goes to the parent CATEGORY (not the main menu) — one step up the chain.
+  - item: arrow name:"&fBack"
+    lore:
+      - "&7Back to %rbazaar_category%"
+    row: 6
+    column: 4
+    left-click:
+      - id: open_menu
+        args:
+          menu: bazaar_category
+          category: "%rbazaar_category_id%"
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: barrier name:"&cClose"
+    lore: []
+    row: 6
+    column: 5
+    left-click:
+      - id: close_inventory

@@ -44,7 +44,8 @@ public final class EffectDispatcher {
     private void dispatch(Player player, MenuEffect e) {
         switch (e.id().toLowerCase(Locale.ROOT)) {
             case "close_inventory" -> player.closeInventory();
-            case "open_menu" -> openMenu(player, e.argString("menu", "bazaar_main"), e.argString("category", null));
+            case "open_menu" -> openMenu(player, e.argString("menu", "bazaar_main"),
+                    e.argString("category", null), e.argString("group", null));
             case "play_sound" -> playSound(player, e);
             case "send_message" -> player.sendMessage(Text.chat(e.argString("message", "")));
 
@@ -73,10 +74,11 @@ public final class EffectDispatcher {
         gui.refresh(player); // prices moved — re-render
     }
 
-    private void openMenu(Player player, String menu, String category) {
+    private void openMenu(Player player, String menu, String category, String group) {
         switch (menu) {
             case "bazaar_main" -> gui.openMain(player);
             case "bazaar_category" -> gui.openCategory(player, category, 1);
+            case "bazaar_group" -> gui.openGroup(player, category, group, 1);
             default -> gui.openMain(player);
         }
     }

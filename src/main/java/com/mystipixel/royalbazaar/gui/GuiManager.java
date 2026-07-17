@@ -64,6 +64,11 @@ public final class GuiManager {
         views.put(player.getUniqueId(), view);
     }
 
+    /**
+     * The category grid. A category that declares {@code groups:} pages its group icons here (each
+     * opening the group menu); a flat one pages its products directly, as before. Un-grouped items in
+     * a grouped category still appear alongside the group icons, so nothing can go missing.
+     */
     public void openCategory(Player player, String categoryId, int page) {
         CategoryConfig cat = market.category(categoryId);
         if (cat == null) {
@@ -79,7 +84,40 @@ public final class GuiManager {
         tmpl.applyFiller(inv);
         placeFixedSlots(tmpl, inv, view, base);
         placeArrows(tmpl, inv, view);
-        paginateItems(tmpl, inv, view, player, cat);
+        if (cat.hasGroups()) {
+            paginateGroups(tmpl, inv, view, player, cat);
+        } else {
+            paginateItems(tmpl, inv, view, player, market.itemsIn(cat.id()));
+        }
+
+        player.openInventory(inv);
+        views.put(player.getUniqueId(), view);
+    }
+
+    /** One group's products: category → group → here. */
+    public void openGroup(Player player, String categoryId, String groupId, int page) {
+        CategoryConfig cat = market.category(categoryId);
+        if (cat == null) {
+            return;
+        }
+        CategoryConfig.Group group = cat.groups().stream()
+                .filter(g -> g.id().equals(groupId))
+                .findFirst().orElse(null);
+        if (group == null) {
+            openCategory(player, categoryId, 1); // stale/typo'd group — don't strand the player
+            return;
+        }
+        MenuTemplate tmpl = menus.get("bazaar_group");
+        OpenView view = new OpenView("bazaar_group", categoryId, groupId, null);
+        view.setPage(Math.max(1, page));
+
+        List<MarketItem> items = market.itemsInGroup(categoryId, groupId);
+        Map<String, String> base = service.groupPlaceholders(cat, group, items);
+        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
+        tmpl.applyFiller(inv);
+        placeFixedSlots(tmpl, inv, view, base);
+        placeArrows(tmpl, inv, view);
+        paginateItems(tmpl, inv, view, player, items);
 
         player.openInventory(inv);
         views.put(player.getUniqueId(), view);
@@ -110,6 +148,7 @@ public final class GuiManager {
         }
         switch (v.menuId()) {
             case "bazaar_category" -> openCategory(player, v.categoryId(), v.page());
+            case "bazaar_group" -> openGroup(player, v.categoryId(), v.groupId(), v.page());
             case "bazaar_product" -> openProduct(player, v.itemId());
             default -> openMain(player);
         }
@@ -137,36 +176,81 @@ public final class GuiManager {
         }
     }
 
-    private void paginateItems(MenuTemplate tmpl, Inventory inv, OpenView view, Player player, CategoryConfig cat) {
+    private void paginateItems(MenuTemplate tmpl, Inventory inv, OpenView view, Player player,
+                               List<MarketItem> items) {
         MenuTemplate.Content content = tmpl.content();
         List<Integer> slots = tmpl.contentSlots();
         if (content == null || slots.isEmpty()) {
             return;
         }
-        List<MarketItem> items = market.itemsIn(cat.id());
+        paginate(tmpl, inv, view, items.size(), (idx, slot) -> {
+            MarketItem item = items.get(idx);
+            Map<String, String> ph = service.placeholders(item, player);
+            inv.setItem(slot, content.template().build(eco, ph, content.lore()));
+            view.bind(slot, resolveEffects(content.leftClick(), ph), resolveEffects(content.rightClick(), ph));
+        });
+    }
+
+    /**
+     * The group grid: one icon per declared group, each carrying a live summary, followed by any
+     * items the config left un-grouped so they can't silently disappear from the category.
+     */
+    private void paginateGroups(MenuTemplate tmpl, Inventory inv, OpenView view, Player player,
+                                CategoryConfig cat) {
+        MenuTemplate.Content groupContent = tmpl.groupContent();
+        MenuTemplate.Content content = tmpl.content();
+        if (groupContent == null || tmpl.contentSlots().isEmpty()) {
+            // No group-content template authored — fall back to a flat listing rather than an empty menu.
+            paginateItems(tmpl, inv, view, player, market.itemsIn(cat.id()));
+            return;
+        }
+        List<CategoryConfig.Group> groups = cat.groups();
+        List<MarketItem> loose = market.ungroupedItemsIn(cat.id());
+
+        paginate(tmpl, inv, view, groups.size() + loose.size(), (idx, slot) -> {
+            if (idx < groups.size()) {
+                CategoryConfig.Group group = groups.get(idx);
+                Map<String, String> ph = service.groupPlaceholders(
+                        cat, group, market.itemsInGroup(cat.id(), group.id()));
+                inv.setItem(slot, groupContent.template().build(eco, ph, groupContent.lore()));
+                view.bind(slot, resolveEffects(groupContent.leftClick(), ph),
+                        resolveEffects(groupContent.rightClick(), ph));
+            } else if (content != null) {
+                MarketItem item = loose.get(idx - groups.size());
+                Map<String, String> ph = service.placeholders(item, player);
+                inv.setItem(slot, content.template().build(eco, ph, content.lore()));
+                view.bind(slot, resolveEffects(content.leftClick(), ph), resolveEffects(content.rightClick(), ph));
+            }
+        });
+    }
+
+    /**
+     * Shared paging: walk the content slots for the current page, hand each (entryIndex, slot) to the
+     * renderer, and expose the forwards arrow only when a next page actually exists.
+     */
+    private void paginate(MenuTemplate tmpl, Inventory inv, OpenView view, int total, SlotRenderer renderer) {
+        List<Integer> slots = tmpl.contentSlots();
         int perPage = slots.size();
         int from = (view.page() - 1) * perPage;
 
         for (int i = 0; i < perPage; i++) {
             int idx = from + i;
-            int slot = slots.get(i);
-            if (idx >= items.size()) {
-                continue;
+            if (idx >= total) {
+                break;
             }
-            MarketItem item = items.get(idx);
-            Map<String, String> ph = service.placeholders(item, player);
-            ItemSpec spec = content.template();
-            inv.setItem(slot, spec.build(eco, ph, content.lore()));
-            view.bind(slot, resolveEffects(content.leftClick(), ph), resolveEffects(content.rightClick(), ph));
+            renderer.render(idx, slots.get(i));
         }
 
-        // Only expose the NEXT arrow (and bind it) if there is another page.
         MenuTemplate.Arrow fwd = tmpl.forwards();
-        boolean hasNext = from + perPage < items.size();
-        if (fwd != null && fwd.enabled() && inBounds(fwd.index(), inv) && hasNext) {
+        if (fwd != null && fwd.enabled() && inBounds(fwd.index(), inv) && from + perPage < total) {
             inv.setItem(fwd.index(), fwd.item().build(eco, Map.of(), List.of()));
             view.bind(fwd.index(), List.of(new MenuEffect("rbazaar_next_page", Map.of())), null);
         }
+    }
+
+    @FunctionalInterface
+    private interface SlotRenderer {
+        void render(int entryIndex, int slot);
     }
 
     /**

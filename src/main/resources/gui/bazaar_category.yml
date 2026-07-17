@@ -1,6 +1,12 @@
 # RoyalBazaar - category grid.
-# The "0" slots in the mask are the live product area: bazaar items from the category
-# config flow in here automatically and page themselves. Never edit item slots by hand.
+# The "0" slots in the mask are the live area: entries from the category config flow in here
+# automatically and page themselves. Never edit item slots by hand.
+#
+# What fills the "0" slots depends on the category:
+#   - category declares groups:  -> 'group-content' below renders one icon per group
+#                                   (plus any un-grouped items, via 'content')
+#   - category has no groups:    -> 'content' below renders the products directly
+# Both templates are kept so a server can mix flat and grouped categories freely.
 
 title: "&8Bazaar &7› &f%rbazaar_category%"
 command: []
@@ -31,7 +37,33 @@ pages:
         - "100000001"
         - "111111111"
 
-# Fills the "0" slots. One entry per bazaar item, sourced from the category config.
+# One icon per group, for categories that declare a groups: block. The summary is live —
+# it is recomputed from the group's products every time the menu is drawn.
+group-content:
+  template:
+    item: "%rbazaar_group_icon%"
+    name: "%rbazaar_group_name%"
+    lore:
+      - "&7%rbazaar_group_size% &7products"
+      - "&7From &a$%rbazaar_group_min_buy%"
+      - "&7Trend: %rbazaar_group_trend% &7(%rbazaar_group_change_24h% 24h)"
+      - "&8%rbazaar_group_volume_24h% traded in 24h"
+      - ""
+      - "&eLeft-click &7to browse."
+    left-click:
+      - id: open_menu
+        args:
+          menu: bazaar_group
+          category: "%rbazaar_category_id%"
+          group: "%rbazaar_group%"
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+# One entry per bazaar item. Used directly by flat categories, and for any items a grouped
+# category left without a group:.
 content:
   template:
     item: "%rbazaar_item%"

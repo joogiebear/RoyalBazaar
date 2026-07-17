@@ -5,6 +5,7 @@ import com.mystipixel.royalbazaar.market.MarketItem;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -12,8 +13,16 @@ import java.util.logging.Logger;
  * One {@code categories/*.yml} file: display metadata for the main-menu icon plus a {@code defaults:}
  * block and the item list. Each item inherits the category defaults and overrides only the fields it
  * cares about — so 300 items don't repeat the same five tuning lines.
+ *
+ * <p>A category may optionally declare {@code groups:} and tag items with {@code group: <id>}, which
+ * inserts a middle menu: category → group → product (e.g. Mining → Iron → Enchanted Iron). Items with
+ * no {@code group} render straight into the category as before, so a category can be flat or grouped
+ * and existing configs keep working untouched.
  */
 public final class CategoryConfig {
+
+    /** One item family inside a category. {@code order} decides its position in the group grid. */
+    public record Group(String id, String name, String icon, int order) {}
 
     /** Tuning that every item inherits unless it overrides the field. */
     public record Defaults(double spread, double elasticity, double reversionRate,
@@ -37,16 +46,18 @@ public final class CategoryConfig {
     private final String icon;      // eco lookup id for the main-menu icon
     private final int slot;         // 1-based position in the main menu
     private final Defaults defaults;
+    private final List<Group> groups;
     private final ConfigurationSection itemsSection;
     private final Logger logger;
 
     private CategoryConfig(String id, String displayName, String icon, int slot, Defaults defaults,
-                           ConfigurationSection itemsSection, Logger logger) {
+                           List<Group> groups, ConfigurationSection itemsSection, Logger logger) {
         this.id = id;
         this.displayName = displayName;
         this.icon = icon;
         this.slot = slot;
         this.defaults = defaults;
+        this.groups = groups;
         this.itemsSection = itemsSection;
         this.logger = logger;
     }
@@ -57,13 +68,39 @@ public final class CategoryConfig {
         int slot = root.getInt("slot", 0);
         Defaults defaults = Defaults.from(root.getConfigurationSection("defaults"));
         return new CategoryConfig(id, display, icon, slot, defaults,
+                loadGroups(root.getConfigurationSection("groups")),
                 root.getConfigurationSection("items"), logger);
+    }
+
+    /** Declared order wins; ties fall back to config order, so an un-ordered groups: block stays stable. */
+    private static List<Group> loadGroups(ConfigurationSection sec) {
+        if (sec == null) {
+            return List.of();
+        }
+        List<Group> out = new ArrayList<>();
+        int seq = 0;
+        for (String key : sec.getKeys(false)) {
+            ConfigurationSection gs = sec.getConfigurationSection(key);
+            if (gs == null) {
+                continue;
+            }
+            out.add(new Group(key, gs.getString("name", key), gs.getString("icon", "minecraft:chest"),
+                    gs.getInt("order", seq)));
+            seq++;
+        }
+        out.sort(Comparator.comparingInt(Group::order));
+        return List.copyOf(out);
     }
 
     public String id() { return id; }
     public String displayName() { return displayName; }
     public String icon() { return icon; }
     public int slot() { return slot; }
+
+    /** Declared groups, in display order. Empty = this category renders its items directly. */
+    public List<Group> groups() { return groups; }
+
+    public boolean hasGroups() { return !groups.isEmpty(); }
 
     /**
      * Materialise every configured item, applying default inheritance and EcoShop anchoring:
@@ -110,6 +147,7 @@ public final class CategoryConfig {
             out.add(new MarketItem(
                     itemId,
                     id,
+                    resolveGroup(is, key),
                     is.getString("display", ""),
                     base,
                     is.getDouble("spread", defaults.spread()),
@@ -119,6 +157,24 @@ public final class CategoryConfig {
                     ceiling));
         }
         return out;
+    }
+
+    /**
+     * The item's {@code group:}, or null if it belongs directly to the category. A group id that isn't
+     * declared in {@code groups:} is dropped to null and warned about — a typo'd group would otherwise
+     * make the item vanish from the GUI entirely (it'd belong to a group no menu ever opens).
+     */
+    private String resolveGroup(ConfigurationSection is, String key) {
+        String group = is.getString("group");
+        if (group == null || group.isBlank()) {
+            return null;
+        }
+        if (groups.stream().noneMatch(g -> g.id().equals(group))) {
+            logger.warning("[category " + id + "] item '" + key + "' references group '" + group
+                    + "', which isn't declared under groups: — showing it directly in the category.");
+            return null;
+        }
+        return group;
     }
 
     /** base_price is either a positive number or the literal {@code auto} (→ EcoShop buy value). */

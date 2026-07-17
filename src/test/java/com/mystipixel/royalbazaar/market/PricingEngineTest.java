@@ -18,7 +18,7 @@ class PricingEngineTest {
     private static final double CEILING = 1000.0;
 
     private static MarketItem item() {
-        return new MarketItem("test:item", "cat", "", BASE, SPREAD, ELASTICITY, 0.10, FLOOR, CEILING);
+        return new MarketItem("test:item", "cat", null, "", BASE, SPREAD, ELASTICITY, 0.10, FLOOR, CEILING);
     }
 
     @Test

@@ -14,6 +14,7 @@ public final class MarketItem {
     // ---- identity / config (immutable) ----
     private final String id;            // eco lookup key, e.g. "ecoitem:enchanted_cobblestone"
     private final String categoryId;
+    private final String groupId;       // nullable — null means the item sits directly in the category
     private final String displayName;   // optional override; empty = use the item's own name
     private final double basePrice;
     private final double spread;        // fraction, e.g. 0.05 == 5%
@@ -31,10 +32,11 @@ public final class MarketItem {
 
     private final VolumeWindow volume = new VolumeWindow();
 
-    public MarketItem(String id, String categoryId, String displayName, double basePrice, double spread,
-                      double elasticity, double reversionRate, double floor, double ceiling) {
+    public MarketItem(String id, String categoryId, String groupId, String displayName, double basePrice,
+                      double spread, double elasticity, double reversionRate, double floor, double ceiling) {
         this.id = id;
         this.categoryId = categoryId;
+        this.groupId = groupId;
         this.displayName = displayName;
         this.basePrice = basePrice;
         this.spread = spread;
@@ -60,6 +62,7 @@ public final class MarketItem {
     // ---- config accessors ----
     public String id() { return id; }
     public String categoryId() { return categoryId; }
+    public String groupId() { return groupId; }
     public String displayName() { return displayName; }
     public double basePrice() { return basePrice; }
     public double spread() { return spread; }

@@ -39,9 +39,11 @@ public final class MenuTemplate {
     private final Arrow forwards;
     private final Arrow backwards;
     private final Content content;               // null for static menus (main)
+    private final Content groupContent;          // null unless the menu can render group icons
 
     private MenuTemplate(String title, int rows, ItemStack maskFiller, List<Integer> contentSlots,
-                         List<MenuSlot> slots, Arrow forwards, Arrow backwards, Content content) {
+                         List<MenuSlot> slots, Arrow forwards, Arrow backwards, Content content,
+                         Content groupContent) {
         this.title = title;
         this.rows = rows;
         this.maskFiller = maskFiller;
@@ -50,6 +52,7 @@ public final class MenuTemplate {
         this.forwards = forwards;
         this.backwards = backwards;
         this.content = content;
+        this.groupContent = groupContent;
     }
 
     // ------------------------------------------------------------------ loading
@@ -95,22 +98,29 @@ public final class MenuTemplate {
         Arrow forwards = parseArrow(cfg.getConfigurationSection("forwards-arrow"), size);
         Arrow backwards = parseArrow(cfg.getConfigurationSection("backwards-arrow"), size);
 
-        // --- content region (RoyalBazaar extension) ---
-        Content content = null;
-        ConfigurationSection contentSec = cfg.getConfigurationSection("content");
-        if (contentSec != null) {
-            ConfigurationSection tmpl = contentSec.getConfigurationSection("template");
-            if (tmpl != null) {
-                ItemSpec spec = ItemSpec.parse(buildInlineItem(tmpl));
-                content = new Content(
-                        spec,
-                        tmpl.getStringList("lore"),
-                        MenuEffect.parseList(getMapList(tmpl, "left-click")),
-                        MenuEffect.parseList(getMapList(tmpl, "right-click")));
-            }
-        }
+        // --- content regions (RoyalBazaar extension) ---
+        // 'content' fills the mask's 0-slots with products; 'group-content' fills them with group
+        // icons instead, when the category being rendered declares groups.
+        Content content = parseContent(cfg.getConfigurationSection("content"));
+        Content groupContent = parseContent(cfg.getConfigurationSection("group-content"));
 
-        return new MenuTemplate(title, rows, filler, contentSlots, slots, forwards, backwards, content);
+        return new MenuTemplate(title, rows, filler, contentSlots, slots, forwards, backwards,
+                content, groupContent);
+    }
+
+    private static Content parseContent(ConfigurationSection sec) {
+        if (sec == null) {
+            return null;
+        }
+        ConfigurationSection tmpl = sec.getConfigurationSection("template");
+        if (tmpl == null) {
+            return null;
+        }
+        return new Content(
+                ItemSpec.parse(buildInlineItem(tmpl)),
+                tmpl.getStringList("lore"),
+                MenuEffect.parseList(getMapList(tmpl, "left-click")),
+                MenuEffect.parseList(getMapList(tmpl, "right-click")));
     }
 
     private static ConfigurationSection firstPageMask(FileConfiguration cfg) {
@@ -228,6 +238,11 @@ public final class MenuTemplate {
 
     public Content content() {
         return content;
+    }
+
+    /** Template for group icons; null when this menu can't render groups. */
+    public Content groupContent() {
+        return groupContent;
     }
 
     /** Paint the mask filler across every non-content slot. */

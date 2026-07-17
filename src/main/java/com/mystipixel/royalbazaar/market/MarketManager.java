@@ -80,6 +80,34 @@ public final class MarketManager {
         return out;
     }
 
+    /**
+     * Items shown directly on a category's own grid: everything for a flat category, or only the
+     * un-grouped leftovers for a grouped one (grouped items live behind their group icon instead).
+     */
+    public List<MarketItem> ungroupedItemsIn(String categoryId) {
+        List<MarketItem> out = new ArrayList<>();
+        for (MarketItem item : byId.values()) {
+            if (item.categoryId().equals(categoryId) && item.groupId() == null) {
+                out.add(item);
+            }
+        }
+        return out;
+    }
+
+    /** Items in one group of a category, in config order (for the group grid). */
+    public List<MarketItem> itemsInGroup(String categoryId, String groupId) {
+        List<MarketItem> out = new ArrayList<>();
+        if (groupId == null) {
+            return out;
+        }
+        for (MarketItem item : byId.values()) {
+            if (item.categoryId().equals(categoryId) && groupId.equals(item.groupId())) {
+                out.add(item);
+            }
+        }
+        return out;
+    }
+
     // ------------------------------------------------------------------ tick
 
     /** Reversion + stat bookkeeping for every item. Main thread. */

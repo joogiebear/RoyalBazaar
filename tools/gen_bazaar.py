@@ -94,6 +94,70 @@ CURATED = {
     'diamond_chestplate': 8 * D, 'chainmail_chestplate': 8 * I,
 }
 
+# ---------------------------------------------------------------- grouping
+# A group is one item family: the raw material plus every compressed form of it, so
+# Mining -> Iron -> [Iron Block, Enchanted Iron, Enchanted Iron Block].
+#
+# FAMILY collapses a derived form onto its root material. Anything not listed is its own family.
+# Only families with 2+ members become groups -- a group of one is a click that buys nothing.
+FAMILY = {
+    'iron_block': 'iron_ingot', 'diamond_block': 'diamond', 'coal_block': 'coal',
+    'gold_block': 'gold_ingot', 'gold_nugget': 'gold_ingot', 'lapis_block': 'lapis_lazuli',
+    'redstone_block': 'redstone', 'emerald_block': 'emerald', 'hay_block': 'wheat',
+    'bread': 'wheat', 'quartz_block': 'quartz', 'chiseled_quartz_block': 'quartz',
+    'glowstone': 'glowstone_dust', 'bricks': 'brick', 'packed_ice': 'ice',
+    'baked_potato': 'potato', 'cooked_cod': 'cod', 'cooked_salmon': 'salmon',
+    'cooked_porkchop': 'porkchop', 'cooked_mutton': 'mutton', 'golden_carrot': 'carrot',
+    'melon': 'melon_slice', 'glistering_melon_slice': 'melon_slice',
+    'red_mushroom_block': 'red_mushroom', 'brown_mushroom_block': 'brown_mushroom',
+    'mushroom_stew': 'brown_mushroom', 'blaze_powder': 'blaze_rod', 'bone_meal': 'bone',
+    'charcoal': 'coal', 'dark_prismarine': 'prismarine_shard', 'green_dye': 'cactus',
+    'milk_bucket': 'bucket', 'lava_bucket': 'bucket', 'golden_apple': 'apple',
+    'pumpkin_pie': 'pumpkin', 'filled_map': 'map', 'writable_book': 'book',
+    'bookshelf': 'book', 'redstone_torch': 'redstone', 'redstone_lamp': 'redstone',
+    'comparator': 'redstone', 'repeater': 'redstone',
+}
+
+# tools_armor is 29 one-per-material singletons, so family grouping does nothing for it.
+# Group it by metal tier instead -- which is how a player thinks about gear anyway.
+GEAR_TIERS = [('diamond_', 'diamond', 'minecraft:diamond'),
+              ('golden_', 'gold', 'minecraft:gold_ingot'),
+              ('iron_', 'iron', 'minecraft:iron_ingot'),
+              ('chainmail_', 'chainmail', 'minecraft:chain')]
+
+# Icons for families whose root material isn't itself a placeable item id.
+FAMILY_ICON = {'melon_slice': 'minecraft:melon', 'cod': 'minecraft:cod', 'salmon': 'minecraft:salmon'}
+
+# The family key is a material id, which makes a clumsy label ("Iron Ingot" for the iron family).
+FAMILY_NAME = {'iron_ingot': 'Iron', 'gold_ingot': 'Gold', 'lapis_lazuli': 'Lapis',
+               'melon_slice': 'Melon', 'glowstone_dust': 'Glowstone', 'blaze_rod': 'Blaze',
+               'wheat_seeds': 'Seeds', 'prismarine_shard': 'Prismarine', 'nether_wart': 'Nether Wart',
+               'brown_mushroom': 'Mushroom', 'raw_beef': 'Beef', 'porkchop': 'Pork'}
+
+
+def family_of(cat_key, base):
+    """The group key for an item, or None to leave it directly in the category."""
+    if cat_key == 'tools_armor':
+        for prefix, fam, _ in GEAR_TIERS:
+            if base.startswith(prefix):
+                return fam
+        return None
+    return FAMILY.get(base, base)
+
+
+def pretty(key):
+    return ' '.join(w.capitalize() for w in key.replace('_', ' ').split())
+
+
+def group_meta(cat_key, fam):
+    """(display name, icon) for a group."""
+    if cat_key == 'tools_armor':
+        for _, name, icon in GEAR_TIERS:
+            if name == fam:
+                return f'{pretty(fam)} Gear', icon
+    return FAMILY_NAME.get(fam, pretty(fam)), FAMILY_ICON.get(fam, f'minecraft:{fam}')
+
+
 # ---------------------------------------------------------------- category meta
 META = {
     'mining':            ('&bMining',        'minecraft:iron_pickaxe',  'Ores, stone and gemstones.'),
@@ -183,13 +247,29 @@ for cat, iid, buy, sell, base, mult, rarity in ECO:
     price = m * unit
     ceiling, floor = limits(base, unit)
     cats[key].append({'id': iid, 'base_price': price, 'ceiling': ceiling, 'floor': floor,
-                      'base': base, 'mult': m, 'unit': unit, 'src': src, 'rarity': rarity})
+                      'base': base, 'mult': m, 'unit': unit, 'src': src, 'rarity': rarity,
+                      'family': family_of(key, base)})
 
 os.makedirs('out/categories', exist_ok=True)
+group_report = {}
 for key, items in cats.items():
     name, icon, blurb = META[key]
     row, col = SLOTS[key]
     items.sort(key=lambda x: x['base_price'])
+
+    # A family earns a group only with 2+ members (counting any raw material in that family).
+    raw_fams = {r['id']: family_of(key, r['id']) for r in RAWS.get(key, [])}
+    tally = collections.Counter(i['family'] for i in items if i['family'])
+    tally.update(f for f in raw_fams.values() if f)
+    live = {f for f, n in tally.items() if n >= 2}
+    # Order groups by their cheapest member, so the grid reads cheap -> expensive like the flat one did.
+    order = sorted(live, key=lambda f: min(i['base_price'] for i in items if i['family'] == f)
+                   if any(i['family'] == f for i in items) else 0)
+    # Grid entries = one per group + every item/raw that didn't land in one.
+    loose_count = (sum(1 for i in items if i['family'] not in live)
+                   + sum(1 for f in raw_fams.values() if f not in live))
+    group_report[key] = (len(order), loose_count)
+
     L = [f'# RoyalBazaar - {key}. Generated from the EcoItems catalogue.',
          '# base_price = compression-multiplier x fair unit value of the source material.',
          '# Unit values anchor to EcoShop (1.5 x NPC sell) where the NPC trades that material.',
@@ -197,13 +277,25 @@ for key, items in cats.items():
          '',
          f'name: "{name}"', f'icon: "{icon}"', f'slot: {(row - 1) * 9 + (col - 1)}', '',
          'defaults:', f'  spread: {SPREAD}', '  elasticity: 50000', '  reversion_rate: 0.02',
-         f'  floor_pct: {FLOOR_FLOOR}', f'  ceiling_pct: {HARD_CEILING}', '', 'items:']
+         f'  floor_pct: {FLOOR_FLOOR}', f'  ceiling_pct: {HARD_CEILING}', '']
+
+    if order:
+        L += ['# Item families. Each becomes one icon on the category grid, opening a sub-menu.',
+              '# Families with only one product are left out -- they sit directly in the category.',
+              'groups:']
+        for n, fam in enumerate(order):
+            gname, gicon = group_meta(key, fam)
+            L += [f'  {fam}:', f'    name: "&f{gname}"', f'    icon: "{gicon}"', f'    order: {n}']
+        L.append('')
+    L.append('items:')
 
     # raw vanilla materials first, so the category reads raw -> compressed
     for raw in RAWS.get(key, []):
         L.append(f'  {raw["id"]}:')
         if 'verbatim' in raw:
             L.extend(raw['verbatim'])
+            if raw_fams.get(raw['id']) in live:
+                L.append(f'    group: {raw_fams[raw["id"]]}')
             continue
         unit, src = unit_of(raw['id'])
         unit = raw.get('base_price', unit)
@@ -216,6 +308,8 @@ for key, items in cats.items():
             L.append(f'    ceiling_pct: {fmt(ceiling)}')
         if abs(floor - FLOOR_FLOOR) > 1e-9:
             L.append(f'    floor_pct: {fmt(floor)}')
+        if raw_fams.get(raw['id']) in live:
+            L.append(f'    group: {raw_fams[raw["id"]]}')
 
     for it in items:
         L.append(f'  {it["id"]}:')
@@ -225,12 +319,18 @@ for key, items in cats.items():
             L.append(f'    ceiling_pct: {fmt(it["ceiling"])}')
         if abs(it['floor'] - FLOOR_FLOOR) > 1e-9:
             L.append(f'    floor_pct: {fmt(it["floor"])}')
+        if it['family'] in live:
+            L.append(f'    group: {it["family"]}')
         L.append(f'    # {fmt(it["mult"])}x {it["base"]} @ {fmt(it["unit"])}/unit ({it["src"]})')
     # newline='' -- the server reads LF; Windows text mode would smuggle in CRLF.
     with open(f'out/categories/{key}.yml', 'w', encoding='utf-8', newline='') as fh:
         fh.write('\n'.join(L) + '\n')
 
 print(f'wrote {len(cats)} categories, {sum(len(v) for v in cats.values())} items')
-for k in sorted(cats): print(f'  {k:20s} {len(cats[k]):3d} items')
+print(f'{"category":22s} {"items":>5s} {"groups":>7s} {"loose":>6s} {"grid":>5s}  pages (28/page)')
+for k in sorted(cats):
+    g, loose = group_report[k]
+    grid = g + loose
+    print(f'  {k:20s} {len(cats[k]):5d} {g:7d} {loose:6d} {grid:5d}  {-(-grid // 28)}')
 print(f'\nskipped {len(skipped)}:')
 for i, r in skipped: print(f'  {i:34s} {r}')

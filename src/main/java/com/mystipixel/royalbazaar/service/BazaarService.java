@@ -1,5 +1,6 @@
 package com.mystipixel.royalbazaar.service;
 
+import com.mystipixel.royalbazaar.config.CategoryConfig;
 import com.mystipixel.royalbazaar.config.PluginConfig;
 import com.mystipixel.royalbazaar.data.BazaarDatabase;
 import com.mystipixel.royalbazaar.hooks.EconGuardHook;
@@ -15,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -201,6 +203,58 @@ public final class BazaarService {
             p.put("rbazaar_held_amount", String.valueOf(held));
             p.put("rbazaar_sell_value_all", vault.format(PricingEngine.sellProceeds(item, Math.max(1, held))));
         }
+        return p;
+    }
+
+    /**
+     * Live summary for a group icon on the category grid: how many products it holds, the cheapest
+     * buy price in it, its combined 24h volume and an aggregate trend. Computed at render time from
+     * the group's items, so the icon reflects the market rather than a config snapshot.
+     *
+     * <p>{@code items} may be empty (a declared group nobody put items in) — the summary degrades to
+     * zeroes rather than throwing, so a half-finished config still opens.
+     */
+    public Map<String, String> groupPlaceholders(CategoryConfig cat, CategoryConfig.Group group,
+                                                 List<MarketItem> items) {
+        Map<String, String> p = new HashMap<>();
+        p.put("rbazaar_category", cat.displayName());
+        p.put("rbazaar_category_id", cat.id());   // raw id — open_menu args need this, not the display name
+        p.put("rbazaar_group", group.id());
+        p.put("rbazaar_group_name", group.name());
+        p.put("rbazaar_group_icon", group.icon());
+        p.put("rbazaar_group_size", String.valueOf(items.size()));
+
+        if (items.isEmpty()) {
+            p.put("rbazaar_group_min_buy", vault.format(0));
+            p.put("rbazaar_group_max_buy", vault.format(0));
+            p.put("rbazaar_group_volume_24h", "0");
+            p.put("rbazaar_group_trend", "&7-");
+            p.put("rbazaar_group_change_24h", "0.0%");
+            return p;
+        }
+
+        double min = Double.MAX_VALUE;
+        double max = 0;
+        long volume = 0;
+        double weightedNow = 0;
+        double weightedThen = 0;
+        for (MarketItem item : items) {
+            double buy = PricingEngine.buyPrice(item);
+            min = Math.min(min, buy);
+            max = Math.max(max, buy);
+            volume += item.volume().bought24h() + item.volume().sold24h();
+            weightedNow += item.mid();
+            weightedThen += item.midYesterday() > 0 ? item.midYesterday() : item.mid();
+        }
+        p.put("rbazaar_group_min_buy", vault.format(min));
+        p.put("rbazaar_group_max_buy", vault.format(max));
+        p.put("rbazaar_group_volume_24h", String.valueOf(volume));
+
+        // Aggregate the group's move from the summed mids, so one cheap item can't swing the arrow.
+        double pct = weightedThen <= 0 ? 0 : (weightedNow - weightedThen) / weightedThen * 100.0;
+        p.put("rbazaar_group_change_24h", String.format("%s%.1f%%", pct >= 0 ? "&a+" : "&c", pct));
+        double eps = 0.1;
+        p.put("rbazaar_group_trend", pct > eps ? "&a▲" : pct < -eps ? "&c▼" : "&7=");
         return p;
     }
 
