@@ -11,7 +11,8 @@ These are **offline authoring tools**, not part of the plugin. Nothing here ship
 | `hypixel_layout.py` | The structure: 5 categories, 63 item families, declared by hand. |
 | `gen_hypixel.py` | Prices that layout and writes `out/categories/*.yml`. |
 | `gen_newitems.py` | Writes EcoItems configs for items the pack is missing. |
-| `verify_bazaar.py` | **Audits for money printers. Run after every price change.** |
+| `verify_bazaar.py` | **Audits the bazaar for money printers. Run after every price change.** |
+| `audit_recipes.py` | **Audits EcoShop against the real vanilla recipe graph.** Run after any NPC price change. |
 | `repricer.py` | Syncs EcoItems `shop-pricing` + lore to the generated prices. |
 
 ## Why the layout is declared, not derived
@@ -92,3 +93,29 @@ generated bazaar values. Runs server-side, in place, with a `.bak-reprice` per f
 
 `shop-pricing` is inert metadata — nothing in the eco suite reads it — but its numbers are
 duplicated into each item's lore, so leaving them stale makes the tooltip contradict the bazaar.
+
+
+## audit_recipes.py — the NPC side
+
+`verify_bazaar.py` proves the *bazaar* can't be looped. This proves the *NPC shop* can't, which is
+a separate hole: buy ingredients from a merchant, craft, sell the result back for more.
+
+It reads the authoritative recipe data out of the server jar rather than hardcoding recipes — an
+earlier hand-written pass missed a `diamond_sword` printer that this found immediately:
+
+```bash
+# on the server: unpack vanilla's recipe JSONs (the mojang jar is a bundler; the data is nested)
+cd /tmp && mkdir -p rx && cd rx
+unzip -q -o /path/to/cache/mojang_<ver>.jar "META-INF/versions/<ver>/server-<ver>.jar"
+unzip -q -o META-INF/versions/<ver>/server-<ver>.jar "data/minecraft/recipe/*" "data/minecraft/tags/item/*"
+
+python3 audit_recipes.py       # must print: 0 craft printer(s), 0 smelt printer(s)
+```
+
+Only recipes whose every ingredient is NPC-buyable can loop — 32 of 1,585 here — so the report is
+short and worth reading in full. It also prints near-misses: a recipe sitting a couple of coins from
+break-even isn't safe, it's one price tweak from being a printer.
+
+**The rule that keeps this clean: a crafted item must sell for less than its ingredients cost to
+buy.** Every printer found so far broke exactly that — blocks priced at a 50% sell ratio while their
+parts used 25%, and a diamond sword worth more than two diamonds.
