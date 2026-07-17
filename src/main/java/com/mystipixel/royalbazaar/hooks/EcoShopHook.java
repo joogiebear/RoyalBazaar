@@ -3,6 +3,7 @@ package com.mystipixel.royalbazaar.hooks;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -13,8 +14,9 @@ import java.util.logging.Logger;
  * Reads EcoShop's per-item prices so RoyalBazaar can anchor to them (the eco-suite's single source of
  * truth for an item's value). EcoShop brackets each item with a {@code buy.value} (what a player pays
  * the NPC — the natural ceiling) and a {@code sell.value} (what the NPC pays the player — the natural
- * floor). We parse {@code plugins/EcoShop/categories/*.yml} once at load; if EcoShop is absent this
- * hook is simply empty and every {@code auto}/{@code npc_*} option falls back to its config default.
+ * floor). We parse {@code plugins/EcoShop/categories/**.yml} (recursively — admins file categories into
+ * subfolders) once at load; if EcoShop is absent this hook is simply empty and every {@code auto}/
+ * {@code npc_*} option falls back to its config default.
  *
  * <p>This is a read-only, best-effort file parse — RoyalBazaar never writes EcoShop, and a parse miss
  * for one item never blocks loading.
@@ -55,10 +57,8 @@ public final class EcoShopHook {
     // ------------------------------------------------------------------ loading
 
     private void load(File dir, Logger logger) {
-        File[] files = dir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".yml") && !n.startsWith("_"));
-        if (files == null) {
-            return;
-        }
+        List<File> files = new ArrayList<>();
+        collect(dir, files);
         for (File file : files) {
             YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
             List<Map<?, ?>> items = cfg.getMapList("items");
@@ -75,7 +75,28 @@ public final class EcoShopHook {
                 byId.put(normalize(String.valueOf(lookup)), new ShopPrice(buy, sell));
             }
         }
-        logger.info("EcoShop detected — anchored prices available for " + byId.size() + " items.");
+        logger.info("EcoShop detected — anchored prices available for " + byId.size() + " items"
+                + " (from " + files.size() + " category file(s)).");
+    }
+
+    /**
+     * Gather category files recursively. EcoShop lets an admin file categories into subfolders
+     * (RoyalMC keeps them all under {@code categories/npc/}), so a flat listing finds nothing and
+     * every {@code base_price: auto} silently falls back — hence the recursion.
+     * Files starting with {@code _} are EcoShop's own examples and are skipped.
+     */
+    private void collect(File dir, List<File> out) {
+        File[] entries = dir.listFiles();
+        if (entries == null) {
+            return;
+        }
+        for (File f : entries) {
+            if (f.isDirectory()) {
+                collect(f, out);
+            } else if (f.getName().toLowerCase(Locale.ROOT).endsWith(".yml") && !f.getName().startsWith("_")) {
+                out.add(f);
+            }
+        }
     }
 
     /** Pull {@code value} out of a {@code buy:}/{@code sell:} sub-map. */
