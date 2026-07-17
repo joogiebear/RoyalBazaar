@@ -54,10 +54,17 @@ DATA=$(jq -cn \
     file_parts:["file"], primary_file:"file"}')
 
 echo "Uploading $JAR -> Modrinth project '$SLUG' ($PID), loaders $LOADERS"
+
+# Hand curl the JSON via a file, never inline. In -F, ';' begins the content-type parameter, so a
+# semicolon anywhere in the payload truncates the part mid-string and Modrinth rejects the result
+# as malformed JSON. One semicolon in one commit subject is enough to break a release, and the
+# error it produces ("EOF while parsing a string") points nowhere near the real cause.
+printf '%s' "$DATA" > modrinth_payload.json
+
 HTTP=$(curl -s -o resp.json -w '%{http_code}' -X POST "$API/version" \
   -H "Authorization: $MODRINTH_TOKEN" \
   -H "User-Agent: $UA" \
-  -F "data=$DATA;type=application/json" \
+  -F "data=@modrinth_payload.json;type=application/json" \
   -F "file=@$JAR;type=application/java-archive")
 
 if [ "$HTTP" -ge 200 ] && [ "$HTTP" -lt 300 ]; then
