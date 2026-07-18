@@ -23,6 +23,10 @@ import net.milkbowl.vault.economy.Economy;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServiceRegisterEvent;
+import java.util.Locale;
+
+import org.bstats.bukkit.Metrics;
+import org.bstats.charts.SimplePie;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -31,6 +35,9 @@ import java.util.Map;
 import java.util.logging.Level;
 
 public final class RoyalBazaarPlugin extends JavaPlugin {
+
+    /** bStats project id. Identifies the plugin, not the server, so it is fixed rather than configurable. */
+    private static final int BSTATS_PLUGIN_ID = 32734;
 
     private PluginConfig config;
     private com.mystipixel.royalbazaar.message.MessageManager messages;
@@ -127,6 +134,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
             getLogger().info("Registered PlaceholderAPI expansion.");
         }
 
+        setupMetrics();
         getLogger().info("RoyalBazaar enabled.");
     }
 
@@ -259,4 +267,20 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         menus.reload();
         scheduleTasks();
     }
+    /**
+     * Anonymous usage reporting via bStats.
+     *
+     * <p>Server owners who want no reporting disable it globally in plugins/bStats/config.yml, which
+     * is the mechanism bStats provides; the id itself is fixed because it names this plugin's project.
+     */
+    private void setupMetrics() {
+        Metrics metrics = new Metrics(this, BSTATS_PLUGIN_ID);
+        metrics.addCustomChart(new SimplePie("storage_backend",
+                () -> getConfig().getString("storage.type", "SQLITE").toUpperCase(Locale.ROOT)));
+        metrics.addCustomChart(new SimplePie("categories_configured",
+                () -> String.valueOf(market == null ? 0 : market.categories().size())));
+        metrics.addCustomChart(new SimplePie("default_category_set",
+                () -> String.valueOf(!getConfig().getString("default-category", "").isBlank())));
+    }
+
 }

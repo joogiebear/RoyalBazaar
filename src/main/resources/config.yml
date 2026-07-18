@@ -43,3 +43,4 @@ storage:
     password: ""
     properties: "useSSL=false"
     pool-size: 10
+
