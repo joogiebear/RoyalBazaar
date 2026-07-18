@@ -1,6 +1,7 @@
 package com.mystipixel.royalbazaar.data;
 
 import com.mystipixel.royalbazaar.market.MarketItem;
+import com.mystipixel.royalbazaar.market.MarketState;
 import com.mystipixel.royalbazaar.market.TradeSide;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -145,7 +146,7 @@ public final class BazaarDatabase {
     }
 
     /** Write-behind flush of dirty items. UPSERT so first-run inserts and later updates both work. */
-    public void flushState(Collection<MarketItem> dirty) throws SQLException {
+    public void flushState(Collection<MarketState> dirty) throws SQLException {
         if (dirty.isEmpty()) {
             return;
         }
@@ -155,7 +156,7 @@ public final class BazaarDatabase {
                 : "INSERT INTO rb_state (item_id, mid_price, mid_yesterday, updated_at) VALUES (?,?,?,?) "
                 + "ON CONFLICT(item_id) DO UPDATE SET mid_price=excluded.mid_price, mid_yesterday=excluded.mid_yesterday, updated_at=excluded.updated_at";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
-            for (MarketItem item : dirty) {
+            for (MarketState item : dirty) {
                 ps.setString(1, item.id());
                 ps.setDouble(2, item.mid());
                 ps.setDouble(3, item.midYesterday());
@@ -167,10 +168,10 @@ public final class BazaarDatabase {
     }
 
     /** Append a price snapshot for the graph / 24h stats. */
-    public void snapshot(Collection<MarketItem> items, long ts) throws SQLException {
+    public void snapshot(Collection<MarketState> items, long ts) throws SQLException {
         String sql = "INSERT INTO rb_history (item_id, ts, mid_price) VALUES (?,?,?)";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
-            for (MarketItem item : items) {
+            for (MarketState item : items) {
                 ps.setString(1, item.id());
                 ps.setLong(2, ts);
                 ps.setDouble(3, item.mid());

@@ -139,4 +139,42 @@ public final class MarketManager {
         }
         return dirty;
     }
+
+    /**
+     * Capture the dirty items' persisted values and clear their flags in one main-thread pass.
+     *
+     * <p>Capturing and clearing together is the point: clearing from the writer thread meant a trade
+     * landing between the read and the clear had its flag wiped, so that price change was never
+     * written and silently reverted on the next restart. Anything changed after this call simply
+     * flags itself dirty again and goes out with the next flush.
+     */
+    public List<MarketState> drainDirtyState() {
+        List<MarketState> out = new ArrayList<>();
+        for (MarketItem item : byId.values()) {
+            if (item.dirty()) {
+                out.add(MarketState.of(item));
+                item.clearDirty();
+            }
+        }
+        return out;
+    }
+
+    /** Detached copies of every item, for the history snapshot writer. Main thread. */
+    public List<MarketState> allState() {
+        List<MarketState> out = new ArrayList<>(byId.size());
+        for (MarketItem item : byId.values()) {
+            out.add(MarketState.of(item));
+        }
+        return out;
+    }
+
+    /** Re-flag items whose write failed, so a transient database error retries instead of losing state. */
+    public void remarkDirty(Collection<String> ids) {
+        for (String id : ids) {
+            MarketItem item = byId.get(id);
+            if (item != null) {
+                item.markDirty();
+            }
+        }
+    }
 }

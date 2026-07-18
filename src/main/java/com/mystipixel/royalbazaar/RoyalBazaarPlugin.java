@@ -15,6 +15,7 @@ import com.mystipixel.royalbazaar.hooks.EcoHook;
 import com.mystipixel.royalbazaar.hooks.EcoShopHook;
 import com.mystipixel.royalbazaar.hooks.VaultHook;
 import com.mystipixel.royalbazaar.market.MarketItem;
+import com.mystipixel.royalbazaar.market.MarketState;
 import com.mystipixel.royalbazaar.market.MarketManager;
 import com.mystipixel.royalbazaar.service.BazaarService;
 import net.milkbowl.vault.economy.Economy;
@@ -157,7 +158,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         }
         if (database != null && market != null) {
             try {
-                database.flushState(market.all()); // final synchronous flush
+                database.flushState(market.allState()); // final synchronous flush
             } catch (Exception e) {
                 getLogger().log(Level.WARNING, "Failed final state flush", e);
             }
@@ -180,32 +181,44 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         long tick = config.tickIntervalTicks();
         this.tickTask = getServer().getScheduler().runTaskTimer(this, () -> market.tick(), tick, tick);
 
+        // These timers are SYNC on purpose: market state is main-thread-owned and unlocked, so the
+        // capture must happen here. Only the database write is pushed off-thread, with an immutable
+        // copy. Running the whole thing async raced with trades and /bazaar reload.
         long flush = config.flushIntervalTicks();
-        this.flushTask = getServer().getScheduler().runTaskTimerAsynchronously(this, this::flushDirty, flush, flush);
+        this.flushTask = getServer().getScheduler().runTaskTimer(this, this::flushDirty, flush, flush);
 
         long history = config.historyIntervalTicks();
-        this.historyTask = getServer().getScheduler().runTaskTimerAsynchronously(this, this::snapshot, history, history);
+        this.historyTask = getServer().getScheduler().runTaskTimer(this, this::snapshot, history, history);
     }
 
     private void flushDirty() {
-        List<MarketItem> dirty = market.drainDirty();
+        // Capture values and clear the dirty flags in one main-thread pass, then write off-thread.
+        List<MarketState> dirty = market.drainDirtyState();
         if (dirty.isEmpty()) {
             return;
         }
-        try {
-            database.flushState(dirty);
-            dirty.forEach(MarketItem::clearDirty);
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "Write-behind flush failed", e);
-        }
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                database.flushState(dirty);
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Write-behind flush failed — re-queueing for the next flush", e);
+                // Flags were already cleared, so without this the failed prices would be lost for good.
+                List<String> ids = dirty.stream().map(MarketState::id).toList();
+                getServer().getScheduler().runTask(this, () -> market.remarkDirty(ids));
+            }
+        });
     }
 
     private void snapshot() {
-        try {
-            database.snapshot(market.all(), System.currentTimeMillis());
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "History snapshot failed", e);
-        }
+        List<MarketState> items = market.allState();   // detached copy on the main thread
+        long ts = System.currentTimeMillis();
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                database.snapshot(items, ts);
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "History snapshot failed", e);
+            }
+        });
     }
 
     private void cancelTasks() {

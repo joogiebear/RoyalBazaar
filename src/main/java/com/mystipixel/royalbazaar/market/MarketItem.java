@@ -98,4 +98,7 @@ public final class MarketItem {
     }
 
     public void clearDirty() { this.dirty = false; }
+
+    /** Re-flag after a failed write, so the state is retried rather than lost. Main thread. */
+    public void markDirty() { this.dirty = true; }
 }
