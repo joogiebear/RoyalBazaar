@@ -25,7 +25,7 @@ backwards-arrow:
   column: 2
 
 # Category rail down the left edge: one icon per category, in the order they load, so a player can
-# move between categories without going back to the hub. The icon and name come from each category's
+# move between categories without leaving the menu. The icon and name come from each category's
 # own config, so adding a category adds a rail entry automatically. Drawn over the mask.
 category-rail:
   enabled: true
@@ -102,8 +102,8 @@ content:
           item: "%rbazaar_item%"
 
 slots:
-  # Sells everything in your inventory that this category buys. From the hub it covers every category;
-  # from inside a group it narrows to that group.
+  # Sells everything in your inventory that this category buys. Inside a group it narrows to that
+  # group; set scope: all on a button to cover every category instead.
   - item: chest name:"&6Sell All"
     lore:
       - "&7Sell every item in your inventory"

@@ -81,7 +81,7 @@ public final class EcoShopHook {
 
     /**
      * Gather category files recursively. EcoShop lets an admin file categories into subfolders
-     * (RoyalMC keeps them all under {@code categories/npc/}), so a flat listing finds nothing and
+     * (commonly all under {@code categories/npc/}), so a flat listing finds nothing and
      * every {@code base_price: auto} silently falls back — hence the recursion.
      * Files starting with {@code _} are EcoShop's own examples and are skipped.
      */

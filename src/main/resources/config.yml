@@ -1,5 +1,5 @@
 # Category that /bazaar opens straight into, by its file name in categories/ (e.g. "farming").
-# Leave empty to open the category hub instead.
+# Leave empty to open the first configured category.
 default-category: ""
 
 # ============================================================

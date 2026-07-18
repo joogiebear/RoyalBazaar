@@ -51,7 +51,7 @@ public final class EffectDispatcher {
     private void dispatch(Player player, MenuEffect e) {
         switch (e.id().toLowerCase(Locale.ROOT)) {
             case "close_inventory" -> player.closeInventory();
-            case "open_menu" -> openMenu(player, e.argString("menu", "bazaar_main"),
+            case "open_menu" -> openMenu(player, e.argString("menu", "bazaar_category"),
                     e.argString("category", null), e.argString("group", null));
             case "play_sound" -> playSound(player, e);
             case "send_message" -> player.sendMessage(Text.chat(e.argString("message", "")));
@@ -137,9 +137,9 @@ public final class EffectDispatcher {
     /**
      * Sell everything in the player's inventory that the current view covers.
      *
-     * <p>Scope follows where the button was clicked, which is what makes one button feel right in three
-     * places: the hub sells anything the bazaar trades, a category sells only its own items, and a group
-     * narrows further to that group. An explicit {@code scope: all} in the config always means everything.
+     * <p>Scope follows where the button was clicked, which is what makes one button feel right in more
+     * than one place: a category sells only its own items and a group narrows further to that group. An
+     * explicit {@code scope: all} in the config always means everything the bazaar trades.
      */
     private void sellAll(Player player, String scope) {
         OpenView view = gui.viewOf(player);
@@ -214,8 +214,8 @@ public final class EffectDispatcher {
      * isn't grouped), a group returns to its category, and anything else falls back to the default view.
      *
      * <p>Worked out from the open view rather than hard-coded per menu, because a fixed target is wrong
-     * as soon as a menu is reachable from more than one place — which is how the product menu ended up
-     * sending players to the hub no matter how they got there.
+     * as soon as a menu is reachable from more than one place — a product opened from a group and the
+     * same product opened from a search need different parents.
      */
     private void goBack(Player player) {
         OpenView view = gui.viewOf(player);

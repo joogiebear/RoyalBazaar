@@ -44,7 +44,7 @@ public final class CategoryConfig {
     private final String id;
     private final String displayName;
     private final String icon;      // eco lookup id for the main-menu icon
-    private final int slot;         // 1-based position in the main menu
+    private final int slot;         // where this category sits on the category rail / icon grid
     private final Defaults defaults;
     private final List<Group> groups;
     private final ConfigurationSection itemsSection;

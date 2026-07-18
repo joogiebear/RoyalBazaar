@@ -1,5 +1,5 @@
 # A bazaar category. The file name (farming) is the category id.
-# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+# 'slot' is where its icon sits in the category grid. Items inherit 'defaults' unless they override a field.
 #
 # Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
 # Prices are anchored to: wheat 3, coal 5, iron_ingot 12, gold_ingot 20, redstone 6, lapis 6,

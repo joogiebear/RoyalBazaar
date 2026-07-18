@@ -128,13 +128,19 @@ Base command `/bazaar`, aliases **`/bz`**, `/rbazaar`.
 
 ## Items and pricing config
 
+The bundled `categories/` are **vanilla-only** — 338 items across farming, mining, combat, woods &
+fishes and oddities — so a fresh install works on any server without EcoItems. `oddities.yml` carries
+a commented EcoItems example showing `base_price: auto` and the NPC anchors; uncomment it only if
+that plugin is installed.
+
+
 One file per category in `categories/`. The file name is the category id.
 
 ```yaml
 # categories/mining.yml
 name: "&bMining"
 icon: "minecraft:iron_pickaxe"
-slot: 13                  # position in the main menu
+slot: 13                  # where this category sits in the icon grid
 
 defaults:                 # every item inherits these unless it overrides them
   spread: 0.05            # 5% gap between buy and sell — your margin + inflation sink
@@ -170,6 +176,22 @@ the bazaar destroys a little money. Without a spread the bazaar leaks value and 
 
 ---
 
+### Fixing an item to a slot
+
+Items and groups flow into the grid in config order. Give one a `row`/`column` (both 1-indexed) — or
+a raw `slot:` — to pin it in place; everything unpinned fills in around it:
+
+```yaml
+wheat:
+  item: "minecraft:wheat"
+  base_price: 3.0
+  row: 2
+  column: 3
+```
+
+Pinned entries hold their square on the first page. Where the grid sits at all is the mask pattern in
+the menu file, so the whole layout is config.
+
 ## EcoShop anchoring
 
 If you run **EcoShop**, you have a problem: two places that price the same item. If both float
@@ -201,7 +223,31 @@ mixing anchored and explicit items in one category is fine.
 
 ## Menus
 
-`menus/*.yml`, in the **EcoMenus dialect** — mask/pattern, `slots:` with `location: {row, column}`,
+`/bazaar` opens a category directly — there is no separate landing menu. A **category rail** down the
+left of the category and group menus moves between categories, drawn from each category's own `icon`
+and `name`, so adding a category adds a rail entry with no menu editing:
+
+```yaml
+category-rail:
+  enabled: true
+  column: 1
+  rows: [1, 2, 3, 4, 5]
+  glint-selected: true
+```
+
+Which category `/bazaar` opens is `default-category` in `config.yml`; leave it empty and the first
+configured category is used.
+
+The menus are:
+
+| File | Purpose |
+|---|---|
+| `bazaar_category.yml` | A category's grid — group icons, or products for a flat category |
+| `bazaar_group.yml` | One group's products |
+| `bazaar_product.yml` | A single item: live stats, plus Buy Instantly / Sell Instantly |
+| `bazaar_buy.yml` | Quantity picker — 1, a stack, fill inventory, or a custom amount typed on a sign |
+
+All in the **EcoMenus dialect** — mask/pattern, `slots:` with `location: {row, column}`,
 inline item specs, `left-click:` effect lists, `%percent%` placeholders.
 
 One extension: a **`content:` region**. The `0` slots in the mask are auto-populated with the
@@ -230,16 +276,26 @@ content:
           item: "%rbazaar_item%"
 ```
 
-**Effect ids:** `rbazaar_open_product` `rbazaar_buy` `rbazaar_sell` `rbazaar_buy_prompt`
-`rbazaar_sell_prompt` `rbazaar_next_page` `rbazaar_prev_page` `open_menu` `close_inventory`
-`play_sound`
+**Effect ids:** `rbazaar_open_product` `rbazaar_open_buy` `rbazaar_buy` `rbazaar_sell`
+`rbazaar_sell_all` `rbazaar_search` `rbazaar_buy_prompt` `rbazaar_sell_prompt`
+`rbazaar_buy_amount_prompt` `rbazaar_back` `rbazaar_next_page` `rbazaar_prev_page` `open_menu`
+`close` / `close_inventory` `play_sound` `send_message`
 
-`rbazaar_buy` / `rbazaar_sell` take an `amount:` arg — a number, or `all`.
+`rbazaar_buy` / `rbazaar_sell` take an `amount:` arg — a number, `all`, or `fill` (buy as many as
+fit in the inventory, capped by what the player can afford).
+
+`rbazaar_sell_all` takes a `scope:` arg — `category` follows wherever the button was clicked
+(a category sells its own items, a group narrows to that group), and `all` covers everything the
+bazaar trades.
+
+`rbazaar_back` works the parent out from the open menu rather than naming a target, so the same
+button behaves correctly however the player arrived.
 
 **Placeholders:** `%rbazaar_item%` `%rbazaar_item_display%` `%rbazaar_buy_price%`
 `%rbazaar_sell_price%` `%rbazaar_buy_cost_1%` `%rbazaar_buy_cost_64%` `%rbazaar_sell_value_1%`
 `%rbazaar_sell_value_64%` `%rbazaar_sell_value_all%` `%rbazaar_held_amount%` `%rbazaar_trend%`
 `%rbazaar_change_24h%` `%rbazaar_volume_24h%` `%rbazaar_spread_pct%`
+`%rbazaar_category%` `%rbazaar_category_id%` `%rbazaar_group%` `%rbazaar_group_name%`
 
 ---
 
@@ -300,6 +356,16 @@ Java 21, Maven. Versioning is `year.week.revision` (e.g. `2026.28.0`), matching 
 - The plugin **waits** for a Vault economy provider instead of disabling when one isn't registered at
   enable time. Vault being a hard dependency says nothing about the *economy plugin*, which can
   register later — disabling would kill the plugin purely because of plugin load order.
+
+### Upgrading
+
+`gui/bazaar_main.yml` (the old category hub) has been **removed**. `/bazaar` now opens a category and
+the rail navigates between them. If you customised that file it is no longer read and can be deleted;
+any button still pointing at `menu: bazaar_main` lands on the default category rather than erroring,
+so nothing needs editing first.
+
+Category icons now come from each category's own `slot`, `icon` and `name` rather than being written
+into a menu file, so a category added after an upgrade appears on its own.
 
 ### Known rough edges
 

@@ -1,5 +1,5 @@
 # A bazaar category. The file name (woods_fishes) is the category id.
-# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+# 'slot' is where its icon sits in the category grid. Items inherit 'defaults' unless they override a field.
 #
 # Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
 # Wood chain: 1 log (4.0) -> 4 planks (1.0 each) -> sticks (0.5 each). Every step is break-even

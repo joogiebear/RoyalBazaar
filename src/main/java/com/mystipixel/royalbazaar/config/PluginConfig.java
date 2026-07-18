@@ -59,8 +59,8 @@ public final class PluginConfig {
 
     /** What to do when a buy can't fully fit in the player's inventory: refund | drop | partial. */
     /**
-     * Category that {@code /bazaar} opens directly, or null to open the hub. Lets a server drop players
-     * straight into the category they care about instead of making them pick every time.
+     * Category that {@code /bazaar} opens directly. Null falls back to the first configured category,
+     * since the category rail is the navigation and there is no separate landing menu.
      */
     public String defaultCategory() {
         String id = plugin.getConfig().getString("default-category", "");

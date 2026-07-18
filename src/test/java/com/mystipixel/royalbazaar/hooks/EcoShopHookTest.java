@@ -47,7 +47,7 @@ class EcoShopHookTest {
     }
 
     /**
-     * The regression this exists for: EcoShop lets categories live in subfolders, and RoyalMC keeps
+     * The regression this exists for: EcoShop lets categories live in subfolders, and servers commonly keep
      * every one under categories/npc/. A non-recursive listing found zero files and reported
      * "anchored prices available for 0 items" while looking perfectly healthy.
      */

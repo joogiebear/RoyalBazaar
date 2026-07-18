@@ -93,7 +93,7 @@ slots:
     left-click:
       - id: rbazaar_search
 
-  # Back goes to the parent CATEGORY (not the main menu) — one step up the chain.
+  # Back goes to the parent CATEGORY — one step up the chain, worked out from the open menu.
   - item: arrow name:"&7« Back"
     lore:
       - "&7Back to %rbazaar_category%"

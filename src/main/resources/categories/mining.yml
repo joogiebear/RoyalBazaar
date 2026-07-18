@@ -1,5 +1,5 @@
 # A bazaar category. The file name (mining) is the category id.
-# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+# 'slot' is where its icon sits in the category grid. Items inherit 'defaults' unless they override a field.
 #
 # Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
 # Storage blocks are exactly 9x their component; nuggets are 1/9 of their ingot.

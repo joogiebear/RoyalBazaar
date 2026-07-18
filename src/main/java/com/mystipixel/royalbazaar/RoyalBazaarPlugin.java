@@ -71,7 +71,10 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         }
         this.guard = new EconGuardHook();
         if (guard.isPresent()) {
-            getLogger().info("EconGuard detected — pre-trade vetoes enabled.");
+            // The veto seam exists but EconGuardHook.allow() still returns true unconditionally, so
+            // don't claim a protection that isn't running yet.
+            getLogger().info("EconGuard detected — trades are reported to it; the pre-trade veto is"
+                    + " not implemented yet, so nothing is blocked.");
         }
 
         this.ecoShop = new EcoShopHook(getDataFolder().getParentFile(), getLogger());

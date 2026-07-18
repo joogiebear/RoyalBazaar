@@ -1,8 +1,8 @@
 # Bazaar pricing & layout tools
 
 Generates and audits `categories/*.yml` from an EcoItems + EcoShop catalogue, so a few hundred
-items can be priced consistently instead of by hand. Written for the RoyalMC server; the pricing
-model is general, the curated tables are not.
+items can be priced consistently instead of by hand. The pricing model is general; the curated
+tables are specific to whichever catalogue you point it at.
 
 These are **offline authoring tools**, not part of the plugin. Nothing here ships in the jar.
 
@@ -42,7 +42,7 @@ unit = 1.5 x NPC_sell
 
 That constant isn't arbitrary — it reproduces the hand-authored wheat/carrot/potato prices
 exactly, so it matches what a human already judged to be fair. Materials with no NPC entry fall
-back to `CURATED` in `gen_bazaar.py`, which is built by crafting identity where a recipe relates
+back to `CURATED` in `gen_hypixel.py`, which is built by crafting identity where a recipe relates
 two items (a `coal_block` is exactly 9 x `coal`) and judged by tier otherwise.
 
 ## Why the ceilings are per-item
@@ -67,7 +67,7 @@ Extract the catalogue from a running server, then generate and audit:
 ```bash
 # 1. EcoItems catalogue -> eco_prices.csv   (cat|id|buy|sell|base-item|multiplier|rarity)
 #    EcoShop prices     -> ecoshop_prices.csv (shop|id|item|buy|sell)
-#    (see the extraction one-liners in the project notes; both are plain CSV)
+#    (both are plain CSV)
 
 python gen_newitems.py      # optional: writes any missing EcoItems configs, deploy them first,
                             # then re-extract eco_prices.csv so they appear in the catalogue
@@ -83,8 +83,8 @@ python verify_bazaar.py     # audits for money printers -- must print ALL CRITIC
 3. bazaar -> NPC — buy cheap on the bazaar, dump on the NPC. Must pass.
 4. floor vs NPC — informational; the NPC is the floor by design.
 
-**Run it after any price edit.** It has caught real loops, including a `+2,560/craft`
-quartz printer.
+**Run it after any price edit.** One mispriced item is enough to make a craft loop profitable,
+and a loop is a money printer for anyone who finds it.
 
 ## repricer.py
 
@@ -100,8 +100,8 @@ duplicated into each item's lore, so leaving them stale makes the tooltip contra
 `verify_bazaar.py` proves the *bazaar* can't be looped. This proves the *NPC shop* can't, which is
 a separate hole: buy ingredients from a merchant, craft, sell the result back for more.
 
-It reads the authoritative recipe data out of the server jar rather than hardcoding recipes — an
-earlier hand-written pass missed a `diamond_sword` printer that this found immediately:
+It reads the authoritative recipe data out of the server jar rather than hardcoding recipes, which
+catches loops a hand-maintained list will miss:
 
 ```bash
 # on the server: unpack vanilla's recipe JSONs (the mojang jar is a bundler; the data is nested)

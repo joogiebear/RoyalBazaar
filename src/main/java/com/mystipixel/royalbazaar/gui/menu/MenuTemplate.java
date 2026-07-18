@@ -29,7 +29,7 @@ public final class MenuTemplate {
 
     /**
      * The category rail: a strip of slots, one per configured category, so a player can jump straight
-     * between categories without going back to the hub. Slots are listed as row/column pairs and drawn
+     * between categories without leaving the menu. Slots are listed as row/column pairs and drawn
      * over whatever the mask put there.
      */
     public record Rail(List<Integer> indices, List<String> lore, boolean glintSelected) {

@@ -13,6 +13,10 @@ They'd need a custom texture and a drop source, not just a config.
 """
 import os
 
+# Permission namespace written into the generated EcoItems configs. Change this to match the
+# nodes your permissions plugin actually grants.
+PERMISSION_NAMESPACE = "royalmc.ecoitems"
+
 SPREAD = 0.05
 OUT = 'out/newitems'
 
@@ -43,13 +47,13 @@ TEMPLATE = """item:
   item: {base} unbreaking:1 hide_enchants hide_attributes
   display-name: '&b{display}'
   lore:
-  - '&7A compressed RoyalMC material.'
+  - '&7A compressed material.'
   - ''
   - '&8A compact item used in advanced crafting.'
   - '&8Crafted from 160 {base_name}'
   craftable: true
   recipe-give-amount: 1
-  crafting-permission: royalmc.ecoitems.craft.{iid}
+  crafting-permission: {ns}.craft.{iid}
   shapeless: false
   recipe:
   - ''
@@ -69,8 +73,8 @@ shop-pricing:
   sell: {sell}
   base-item: {base}
   compression-multiplier: 160
-  permission: royalmc.ecoitems.craft.{iid}
-  source: generated_for_royalmc_hypixel_parity
+  permission: {ns}.craft.{iid}
+  source: generated_for_hypixel_parity
 effects: []
 conditions: []
 """
@@ -81,7 +85,7 @@ for iid, (base, folder, unit, rarity, base_name) in NEW.items():
     display = 'Enchanted ' + base_name
     os.makedirs(f'{OUT}/{folder}', exist_ok=True)
     body = TEMPLATE.format(base=base, display=display, base_name=base_name, iid=iid,
-                           rarity=rarity, buy=buy, sell=sell)
+                           rarity=rarity, buy=buy, sell=sell, ns=PERMISSION_NAMESPACE)
     with open(f'{OUT}/{folder}/{iid}.yml', 'w', encoding='utf-8', newline='') as fh:
         fh.write(body)
     print(f'  {iid:24s} 160x {base:14s} @ {unit:6.1f}/unit -> base {price:9.1f}  buy {buy:>8,} sell {sell:>8,}')

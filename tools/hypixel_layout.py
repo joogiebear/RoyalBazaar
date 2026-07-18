@@ -1,4 +1,4 @@
-"""The Hypixel bazaar layout, mapped onto the RoyalMC catalogue.
+"""The Hypixel bazaar layout, mapped onto an EcoItems catalogue.
 
 Hypixel's groups are editorial, not derivable: "Wheat & Seeds" merges two materials and holds
 seven products; "Chicken & Feather" bundles three. So the structure is declared here by hand

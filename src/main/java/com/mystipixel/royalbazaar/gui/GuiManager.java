@@ -64,9 +64,9 @@ public final class GuiManager {
      * a grouped category still appear alongside the group icons, so nothing can go missing.
      */
     /**
-     * What {@code /bazaar} opens: the configured default category, or the hub when none is set or the
-     * configured id no longer matches a category (renamed, removed) — falling back rather than opening
-     * nothing at all.
+     * What {@code /bazaar} opens: the configured default category, falling back to the first configured
+     * one when none is set or the id no longer matches a category (renamed, removed), rather than
+     * opening nothing at all.
      */
     public void openDefault(Player player) {
         String preferred = service.config().defaultCategory();
@@ -74,9 +74,9 @@ public final class GuiManager {
             openCategory(player, preferred, 1);
             return;
         }
-        // No default configured (or it names a category that no longer exists): open the first one
-        // rather than the hub. The category rail is the navigation, so landing anywhere in it puts
-        // every category one click away — the hub would just be an extra step.
+        // No default configured (or it names a category that no longer exists): open the first one.
+        // The category rail is the navigation, so landing anywhere in it puts every category one
+        // click away.
         for (CategoryConfig cat : market.categories()) {
             openCategory(player, cat.id(), 1);
             return;
@@ -242,14 +242,14 @@ public final class GuiManager {
      * sits on top of the filler, which means a menu gains a rail purely by declaring {@code category-rail}
      * in its YAML — no mask changes needed.
      *
-     * <p>More categories than rail slots simply means the extras aren't shown; the hub still lists them all.
+     * <p>A category beyond the last rail slot is not reachable from the rail, so keep the rail at least
+     * as long as the category list, or point a button at the ones that overflow.
      */
     /**
-     * Put every configured category on the hub, at the {@code slot} its own file declares.
+     * Place every configured category at the {@code slot} its own file declares.
      *
-     * <p>These used to be hand-written into bazaar_main.yml, which meant adding a category silently left
-     * it off the hub — reachable only if you knew it existed. Driving it from the category files instead
-     * keeps the hub complete by definition, and puts each category's placement next to its own settings.
+     * <p>Driving this from the category files means adding a category is enough to make it appear —
+     * placement lives next to the category's own settings rather than in a separate menu file.
      */
     private void placeCategoryIcons(Inventory inv, OpenView view) {
         for (CategoryConfig cat : market.categories()) {
