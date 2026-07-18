@@ -1,0 +1,119 @@
+# RoyalBazaar - instant buy, for one item.
+# Opened from the product page's "Buy Instantly" button. Every quantity here goes through the same
+# purchase as any other buy, so pricing, EconGuard checks and the inventory-full policy all apply.
+#
+# amount: accepts a number, "fill" (as many as fit and you can afford), or "all".
+# Click ids: rbazaar_buy · rbazaar_buy_amount_prompt · rbazaar_back · close · play_sound
+
+title: "&f%rbazaar_item_display% &7» &fInstant Buy"
+command: []
+rows: 4
+
+pages:
+  - page: 1
+    mask:
+      items:
+        - black_stained_glass_pane
+      pattern:
+        - "111111111"
+        - "111111111"
+        - "111111111"
+        - "111111111"
+
+slots:
+  # ---- the item being bought, with its live quote ----
+  - item: "%rbazaar_item% name:\"%rbazaar_item_display%\""
+    lore:
+      - ""
+      - "&7Buy Price: &a$%rbazaar_buy_price%"
+      - "&7You have: &f%rbazaar_held_amount%"
+    row: 1
+    column: 5
+
+  # ---- quantities ----
+  - item: gold_nugget name:"&aBuy 1"
+    lore:
+      - "&7Cost: &a$%rbazaar_buy_cost_1%"
+      - ""
+      - "&eClick to buy"
+    row: 2
+    column: 2
+    left-click:
+      - id: rbazaar_buy
+        args:
+          item: "%rbazaar_item%"
+          amount: 1
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: gold_ingot name:"&aBuy a Stack"
+    lore:
+      - "&7Cost: &a$%rbazaar_buy_cost_64%"
+      - ""
+      - "&eClick to buy 64"
+    row: 2
+    column: 4
+    left-click:
+      - id: rbazaar_buy
+        args:
+          item: "%rbazaar_item%"
+          amount: 64
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: gold_block name:"&aFill My Inventory"
+    lore:
+      - "&7Buy as many as will fit,"
+      - "&7up to what you can afford."
+      - ""
+      - "&eClick to fill"
+    row: 2
+    column: 6
+    left-click:
+      - id: rbazaar_buy
+        args:
+          item: "%rbazaar_item%"
+          amount: fill
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: oak_sign name:"&aCustom Amount"
+    lore:
+      - "&7Type any amount on a sign."
+      - ""
+      - "&eClick to enter an amount"
+    row: 2
+    column: 8
+    left-click:
+      - id: rbazaar_buy_amount_prompt
+        args:
+          item: "%rbazaar_item%"
+
+  # ---- nav ----
+  - item: arrow name:"&7« Back"
+    lore: []
+    row: 4
+    column: 4
+    left-click:
+      - id: rbazaar_back
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
+
+  - item: barrier name:"&cClose"
+    lore: []
+    row: 4
+    column: 6
+    left-click:
+      - id: close_inventory

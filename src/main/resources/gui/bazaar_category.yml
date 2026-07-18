@@ -8,7 +8,7 @@
 #   - category has no groups:    -> 'content' below renders the products directly
 # Both templates are kept so a server can mix flat and grouped categories freely.
 
-title: "&8Bazaar &7› &f%rbazaar_category%"
+title: "&8Bazaar &7» &f%rbazaar_category%"
 command: []
 rows: 6
 
@@ -24,6 +24,28 @@ backwards-arrow:
   row: 6
   column: 2
 
+# Category rail down the left edge: one icon per category, in the order they load, so a player can
+# move between categories without going back to the hub. The icon and name come from each category's
+# own config, so adding a category adds a rail entry automatically. Drawn over the mask.
+category-rail:
+  enabled: true
+  column: 1
+  rows: [1, 2, 3, 4, 5]
+  glint-selected: true
+  lore:
+    - "&7Click to browse this category."
+
+# Grid layout:
+#   The "0" slots below are the live area — entries flow into them in order. Move, shrink or grow that
+#   area by editing the pattern; nothing about the layout is fixed in code.
+#   To pin a specific entry to a specific square, give it a row/column (or a raw slot) in its own
+#   categories/*.yml entry:
+#       wheat:
+#         item: minecraft:wheat
+#         row: 2
+#         column: 3
+#   Pinned entries hold their square on the first page; everything else fills in around them.
+
 pages:
   - page: 1
     mask:
@@ -31,10 +53,10 @@ pages:
         - black_stained_glass_pane
       pattern:
         - "111111111"
-        - "100000001"
-        - "100000001"
-        - "100000001"
-        - "100000001"
+        - "110000001"
+        - "110000001"
+        - "110000001"
+        - "110000001"
         - "111111111"
 
 # One icon per group, for categories that declare a groups: block. The summary is live —
@@ -80,19 +102,31 @@ content:
           item: "%rbazaar_item%"
 
 slots:
-  - item: arrow name:"&fBack"
-    lore: []
+  # Sells everything in your inventory that this category buys. From the hub it covers every category;
+  # from inside a group it narrows to that group.
+  - item: chest name:"&6Sell All"
+    lore:
+      - "&7Sell every item in your inventory"
+      - "&7that belongs to this category."
+      - ""
+      - "&eClick to sell"
     row: 6
-    column: 4
+    column: 3
     left-click:
-      - id: open_menu
+      - id: rbazaar_sell_all
         args:
-          menu: bazaar_main
-      - id: play_sound
-        args:
-          sound: ui_button_click
-          pitch: 1
-          volume: 1
+          scope: category
+
+  - item: oak_sign name:"&bSearch"
+    lore:
+      - "&7Search the bazaar for an item"
+      - "&7by name."
+      - ""
+      - "&eClick to search"
+    row: 6
+    column: 1
+    left-click:
+      - id: rbazaar_search
 
   - item: barrier name:"&cClose"
     lore: []

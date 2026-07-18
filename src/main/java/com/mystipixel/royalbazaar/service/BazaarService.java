@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,11 @@ public final class BazaarService {
     }
 
     // ------------------------------------------------------------------ buy
+
+
+    public PluginConfig config() {
+        return config;
+    }
 
     public TradeResult buy(Player player, String itemId, long amount) {
         MarketItem item = market.get(itemId);
@@ -98,6 +104,40 @@ public final class BazaarService {
 
     // ------------------------------------------------------------------ sell
 
+    /** What a {@link #sellAll} pass did, for the summary message. */
+    public record SellAllResult(int distinctItems, long units, double proceeds, int blocked) {
+        public boolean soldNothing() {
+            return distinctItems == 0;
+        }
+    }
+
+    /**
+     * Sell everything in the player's inventory that {@code scope} covers, skipping anything the bazaar
+     * doesn't trade. Each item goes through the normal {@link #sell} path, so price impact, the audit
+     * record and any EconGuard veto apply exactly as they would selling by hand — a blocked item is
+     * counted and skipped rather than aborting the whole run.
+     */
+    public SellAllResult sellAll(Player player, Collection<MarketItem> scope) {
+        int distinct = 0;
+        long units = 0;
+        double proceeds = 0;
+        int blocked = 0;
+        for (MarketItem item : scope) {
+            if (eco.countHeld(player, item.id()) <= 0) {
+                continue;
+            }
+            TradeResult result = sell(player, item.id(), Long.MAX_VALUE);
+            if (result.ok()) {
+                distinct++;
+                units += result.filled();
+                proceeds += result.total();
+            } else if (result.status() == TradeResult.Status.REJECTED_BY_GUARD) {
+                blocked++;
+            }
+        }
+        return new SellAllResult(distinct, units, proceeds, blocked);
+    }
+
     public TradeResult sell(Player player, String itemId, long amount) {
         MarketItem item = market.get(itemId);
         if (item == null) {
@@ -125,6 +165,37 @@ public final class BazaarService {
     // ------------------------------------------------------------------ inventory helpers
 
     /** Free capacity for this item across empty + partially-filled matching stacks. */
+    /**
+     * How many of an item a "fill my inventory" purchase should buy: as many as physically fit, capped by
+     * what the player can actually pay for.
+     *
+     * <p>The cap needs a search rather than division because the price climbs as the quantity rises —
+     * buying 500 costs more per unit than buying 5 — so the affordable quantity isn't balance/unit_price.
+     * Returns 0 when nothing fits or nothing is affordable, and the caller reports why.
+     */
+    public long fillAmount(Player player, String itemId) {
+        MarketItem item = market.get(itemId);
+        if (item == null) {
+            return 0;
+        }
+        long capacity = spaceFor(player, itemId, Integer.MAX_VALUE);
+        if (capacity <= 0) {
+            return 0;
+        }
+        double balance = vault.balance(player);
+        long low = 0;
+        long high = capacity;
+        while (low < high) {
+            long mid = low + (high - low + 1) / 2;
+            if (PricingEngine.buyCost(item, mid) <= balance) {
+                low = mid;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return low;
+    }
+
     private int spaceFor(Player player, String itemId, int wanted) {
         int max = eco.resolve(itemId, 1).getMaxStackSize();
         int space = 0;
@@ -184,6 +255,24 @@ public final class BazaarService {
 
     // ------------------------------------------------------------------ quote helpers (menus / commands)
 
+    /**
+     * The display name of the group an item belongs to. Falls back to the category name for items that
+     * aren't in a group, so a breadcrumb built from it never renders as an empty gap.
+     */
+    private static String groupNameOf(CategoryConfig category, String groupId) {
+        if (category == null) {
+            return "";
+        }
+        if (groupId != null) {
+            for (CategoryConfig.Group group : category.groups()) {
+                if (group.id().equals(groupId)) {
+                    return group.name();
+                }
+            }
+        }
+        return category.displayName();
+    }
+
     public Map<String, String> placeholders(MarketItem item, Player viewer) {
         Map<String, String> p = new HashMap<>();
         p.put("rbazaar_item", item.id());
@@ -203,6 +292,14 @@ public final class BazaarService {
             p.put("rbazaar_held_amount", String.valueOf(held));
             p.put("rbazaar_sell_value_all", vault.formatPrice(PricingEngine.sellProceeds(item, Math.max(1, held))));
         }
+
+        // Where this item sits, so a product or buy menu can show a breadcrumb in its title. Without
+        // these the placeholders had nothing to resolve against and were printed literally.
+        CategoryConfig category = market.category(item.categoryId());
+        p.put("rbazaar_category_id", item.categoryId() == null ? "" : item.categoryId());
+        p.put("rbazaar_category", category == null ? "" : category.displayName());
+        p.put("rbazaar_group", item.groupId() == null ? "" : item.groupId());
+        p.put("rbazaar_group_name", groupNameOf(category, item.groupId()));
         return p;
     }
 

@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 public final class CategoryConfig {
 
     /** One item family inside a category. {@code order} decides its position in the group grid. */
-    public record Group(String id, String name, String icon, int order) {}
+    public record Group(String id, String name, String icon, int order, int slot) {}
 
     /** Tuning that every item inherits unless it overrides the field. */
     public record Defaults(double spread, double elasticity, double reversionRate,
@@ -85,7 +85,8 @@ public final class CategoryConfig {
                 continue;
             }
             out.add(new Group(key, gs.getString("name", key), gs.getString("icon", "minecraft:chest"),
-                    gs.getInt("order", seq)));
+                    gs.getInt("order", seq),
+                    slotOf(gs)));
             seq++;
         }
         out.sort(Comparator.comparingInt(Group::order));
@@ -96,6 +97,23 @@ public final class CategoryConfig {
     public String displayName() { return displayName; }
     public String icon() { return icon; }
     public int slot() { return slot; }
+
+    /**
+     * An explicit grid position for an entry, as either {@code slot:} (raw inventory index) or a
+     * {@code row:}/{@code column:} pair (both 1-indexed, matching how menu buttons are placed).
+     * Returns -1 when none is set, which means "flow into the next free slot" as before.
+     */
+    private static int slotOf(ConfigurationSection sec) {
+        if (sec.contains("slot")) {
+            return sec.getInt("slot", -1);
+        }
+        int row = sec.getInt("row", -1);
+        int column = sec.getInt("column", -1);
+        if (row < 1 || column < 1 || column > 9) {
+            return -1;
+        }
+        return (row - 1) * 9 + (column - 1);
+    }
 
     /** Declared groups, in display order. Empty = this category renders its items directly. */
     public List<Group> groups() { return groups; }
@@ -144,7 +162,7 @@ public final class CategoryConfig {
                 ceiling = base * defaults.ceilingPct();
             }
 
-            out.add(new MarketItem(
+            MarketItem item = new MarketItem(
                     itemId,
                     id,
                     resolveGroup(is, key),
@@ -154,7 +172,9 @@ public final class CategoryConfig {
                     is.getDouble("elasticity", defaults.elasticity()),
                     is.getDouble("reversion_rate", defaults.reversionRate()),
                     floor,
-                    ceiling));
+                    ceiling);
+            item.setPinnedSlot(slotOf(is));
+            out.add(item);
         }
         return out;
     }

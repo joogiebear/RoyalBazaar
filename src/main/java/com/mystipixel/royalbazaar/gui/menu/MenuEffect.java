@@ -11,7 +11,7 @@ import java.util.Map;
  * <pre>
  * - id: open_menu
  *   args:
- *     menu: bazaar_main
+ *     menu: bazaar_category
  * </pre>
  * {@code args} values may contain {@code %placeholders%}; they are resolved by the dispatcher.
  */

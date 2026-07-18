@@ -7,6 +7,7 @@ import com.mystipixel.royalbazaar.gui.AmountPrompt;
 import com.mystipixel.royalbazaar.gui.BazaarGuiListener;
 import com.mystipixel.royalbazaar.gui.EffectDispatcher;
 import com.mystipixel.royalbazaar.gui.GuiManager;
+import com.mystipixel.royalbazaar.gui.SignInput;
 import com.mystipixel.royalbazaar.gui.menu.MenuManager;
 import com.mystipixel.royalbazaar.gui.menu.MenuTemplate;
 import com.mystipixel.royalbazaar.hooks.BazaarPlaceholderExpansion;
@@ -106,7 +107,9 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         this.gui = new GuiManager(menus, market, service, eco);
 
         AmountPrompt prompt = new AmountPrompt(this, service, gui, messages);
-        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages);
+        SignInput signInput = new SignInput(this);
+        getServer().getPluginManager().registerEvents(signInput, this);
+        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages, market, signInput);
         getServer().getPluginManager().registerEvents(new BazaarGuiListener(gui, dispatcher), this);
         getServer().getPluginManager().registerEvents(prompt, this);
 

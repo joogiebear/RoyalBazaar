@@ -1,9 +1,9 @@
-# RoyalBazaar - group grid (category › group › product).
+# RoyalBazaar - group grid (category » group » product).
 # Shown when a category declares a groups: block and the player clicks one of its group icons.
 # The "0" slots in the mask are the live product area: the group's items flow in here
 # automatically and page themselves. Never edit item slots by hand.
 
-title: "&8Bazaar &7› &f%rbazaar_category% &7› &f%rbazaar_group_name%"
+title: "&f%rbazaar_category% &7» &f%rbazaar_group_name%"
 command: []
 rows: 6
 
@@ -18,6 +18,26 @@ backwards-arrow:
   enabled: true
   row: 6
   column: 2
+
+# Category rail down the left edge — see bazaar_category.yml.
+category-rail:
+  enabled: true
+  column: 1
+  rows: [1, 2, 3, 4, 5]
+  glint-selected: true
+  lore:
+    - "&7Click to browse this category."
+
+# Grid layout:
+#   The "0" slots below are the live area — entries flow into them in order. Move, shrink or grow that
+#   area by editing the pattern; nothing about the layout is fixed in code.
+#   To pin a specific entry to a specific square, give it a row/column (or a raw slot) in its own
+#   categories/*.yml entry:
+#       wheat:
+#         item: minecraft:wheat
+#         row: 2
+#         column: 3
+#   Pinned entries hold their square on the first page; everything else fills in around them.
 
 pages:
   - page: 1
@@ -49,17 +69,38 @@ content:
           item: "%rbazaar_item%"
 
 slots:
+  - item: hopper name:"&6Sell All"
+    lore:
+      - "&7Sell every item in your inventory"
+      - "&7that belongs to this group."
+      - ""
+      - "&eClick to sell"
+    row: 6
+    column: 3
+    left-click:
+      - id: rbazaar_sell_all
+        args:
+          scope: category
+
+  - item: oak_sign name:"&bSearch"
+    lore:
+      - "&7Search the bazaar for an item"
+      - "&7by name."
+      - ""
+      - "&eClick to search"
+    row: 6
+    column: 7
+    left-click:
+      - id: rbazaar_search
+
   # Back goes to the parent CATEGORY (not the main menu) — one step up the chain.
-  - item: arrow name:"&fBack"
+  - item: arrow name:"&7« Back"
     lore:
       - "&7Back to %rbazaar_category%"
     row: 6
     column: 4
     left-click:
-      - id: open_menu
-        args:
-          menu: bazaar_category
-          category: "%rbazaar_category_id%"
+      - id: rbazaar_back
       - id: play_sound
         args:
           sound: ui_button_click
@@ -69,6 +110,6 @@ slots:
   - item: barrier name:"&cClose"
     lore: []
     row: 6
-    column: 5
+    column: 6
     left-click:
       - id: close_inventory

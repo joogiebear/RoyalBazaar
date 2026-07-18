@@ -19,10 +19,12 @@ public final class MenuManager {
 
     public void reload() {
         byId.clear();
-        byId.put("bazaar_main", load("bazaar_main.yml", "&8Bazaar", 6));
+        // No bazaar_main: /bazaar opens a category directly and the category rail is the navigation,
+        // so the old hub was removed rather than left as a menu nothing points at.
         byId.put("bazaar_category", load("bazaar_category.yml", "&8Bazaar", 6));
         byId.put("bazaar_group", load("bazaar_group.yml", "&8Bazaar", 6));
         byId.put("bazaar_product", load("bazaar_product.yml", "&8Bazaar", 6));
+        byId.put("bazaar_buy", load("bazaar_buy.yml", "&8Instant Buy", 3));
     }
 
     private MenuTemplate load(String fileName, String defaultTitle, int defaultRows) {

@@ -58,6 +58,15 @@ public final class PluginConfig {
     }
 
     /** What to do when a buy can't fully fit in the player's inventory: refund | drop | partial. */
+    /**
+     * Category that {@code /bazaar} opens directly, or null to open the hub. Lets a server drop players
+     * straight into the category they care about instead of making them pick every time.
+     */
+    public String defaultCategory() {
+        String id = plugin.getConfig().getString("default-category", "");
+        return id == null || id.isBlank() ? null : id;
+    }
+
     public String inventoryFullPolicy() {
         return plugin.getConfig().getString("trading.inventory-full", "refund").toLowerCase();
     }

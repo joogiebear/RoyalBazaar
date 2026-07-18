@@ -30,6 +30,12 @@ public final class MarketItem {
     private long updatedAt;
     private boolean dirty;
 
+    /**
+     * Explicit grid position from config ({@code row}/{@code column} or {@code slot}), or -1 to let the
+     * item flow into the next free content slot. Set once while categories load, like the pricing fields.
+     */
+    private int pinnedSlot = -1;
+
     private final VolumeWindow volume = new VolumeWindow();
 
     public MarketItem(String id, String categoryId, String groupId, String displayName, double basePrice,
@@ -60,6 +66,10 @@ public final class MarketItem {
     }
 
     // ---- config accessors ----
+    public int pinnedSlot() { return pinnedSlot; }
+
+    public void setPinnedSlot(int pinnedSlot) { this.pinnedSlot = pinnedSlot; }
+
     public String id() { return id; }
     public String categoryId() { return categoryId; }
     public String groupId() { return groupId; }

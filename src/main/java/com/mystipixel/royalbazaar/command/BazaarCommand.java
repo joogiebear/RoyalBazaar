@@ -31,7 +31,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
             if (sender instanceof Player player) {
-                gui.openMain(player);
+                gui.openDefault(player);
             } else {
                 plugin.messages().send(sender, "players-only", "Only players can open the bazaar.");
             }
@@ -67,7 +67,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             }
             default -> {
                 if (sender instanceof Player player) {
-                    gui.openMain(player);
+                    gui.openDefault(player);
                 }
             }
         }

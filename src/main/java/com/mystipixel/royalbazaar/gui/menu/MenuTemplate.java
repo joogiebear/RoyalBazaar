@@ -27,6 +27,14 @@ public final class MenuTemplate {
     public record Arrow(ItemSpec item, int index, boolean enabled) {
     }
 
+    /**
+     * The category rail: a strip of slots, one per configured category, so a player can jump straight
+     * between categories without going back to the hub. Slots are listed as row/column pairs and drawn
+     * over whatever the mask put there.
+     */
+    public record Rail(List<Integer> indices, List<String> lore, boolean glintSelected) {
+    }
+
     /** The content region: template item spec, its lore, and the click effects each generated item gets. */
     public record Content(ItemSpec template, List<String> lore, List<MenuEffect> leftClick, List<MenuEffect> rightClick) {
     }
@@ -40,10 +48,11 @@ public final class MenuTemplate {
     private final Arrow backwards;
     private final Content content;               // null for static menus (main)
     private final Content groupContent;          // null unless the menu can render group icons
+    private final Rail rail;                     // null when the menu shows no category rail
 
     private MenuTemplate(String title, int rows, ItemStack maskFiller, List<Integer> contentSlots,
                          List<MenuSlot> slots, Arrow forwards, Arrow backwards, Content content,
-                         Content groupContent) {
+                         Content groupContent, Rail rail) {
         this.title = title;
         this.rows = rows;
         this.maskFiller = maskFiller;
@@ -53,6 +62,7 @@ public final class MenuTemplate {
         this.backwards = backwards;
         this.content = content;
         this.groupContent = groupContent;
+        this.rail = rail;
     }
 
     // ------------------------------------------------------------------ loading
@@ -104,8 +114,58 @@ public final class MenuTemplate {
         Content content = parseContent(cfg.getConfigurationSection("content"));
         Content groupContent = parseContent(cfg.getConfigurationSection("group-content"));
 
+        Rail rail = parseRail(cfg.getConfigurationSection("category-rail"), size);
+
         return new MenuTemplate(title, rows, filler, contentSlots, slots, forwards, backwards,
-                content, groupContent);
+                content, groupContent, rail);
+    }
+
+    /**
+     * Read the category rail. Accepts either an explicit {@code slots:} list of row/column pairs, or the
+     * shorthand of one {@code column:} plus a list of {@code rows:} — the common case of a vertical strip
+     * down one side.
+     */
+    private static Rail parseRail(ConfigurationSection sec, int size) {
+        if (sec == null || !sec.getBoolean("enabled", true)) {
+            return null;
+        }
+        List<Integer> indices = new ArrayList<>();
+        List<Map<?, ?>> explicit = getMapList(sec, "slots");
+        if (!explicit.isEmpty()) {
+            for (Map<?, ?> entry : explicit) {
+                int index = toIndex(entry.get("row"), entry.get("column"));
+                if (index >= 0 && index < size) {
+                    indices.add(index);
+                }
+            }
+        } else {
+            int column = sec.getInt("column", 1);
+            for (int row : sec.getIntegerList("rows")) {
+                int index = toIndex(row, column);
+                if (index >= 0 && index < size) {
+                    indices.add(index);
+                }
+            }
+        }
+        if (indices.isEmpty()) {
+            return null;
+        }
+        return new Rail(List.copyOf(indices), sec.getStringList("lore"), sec.getBoolean("glint-selected", true));
+    }
+
+    /** Row/column (both 1-indexed) to a raw inventory index; -1 when either is missing or out of range. */
+    private static int toIndex(Object row, Object column) {
+        if (!(row instanceof Number r) || !(column instanceof Number c)) {
+            return -1;
+        }
+        return toIndex(r.intValue(), c.intValue());
+    }
+
+    private static int toIndex(int row, int column) {
+        if (row < 1 || column < 1 || column > 9) {
+            return -1;
+        }
+        return (row - 1) * 9 + (column - 1);
     }
 
     private static Content parseContent(ConfigurationSection sec) {
@@ -207,6 +267,11 @@ public final class MenuTemplate {
     }
 
     // ------------------------------------------------------------------ rendering
+
+    /** The category rail, or null when this menu doesn't show one. */
+    public Rail rail() {
+        return rail;
+    }
 
     public String title() {
         return title;

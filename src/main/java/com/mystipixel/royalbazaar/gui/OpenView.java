@@ -33,6 +33,13 @@ public final class OpenView {
         this.itemId = itemId;
     }
 
+    /** The search text when this view is a search result set, else null. */
+    private String query;
+
+    public String query() { return query; }
+
+    public void setQuery(String query) { this.query = query; }
+
     public String menuId() { return menuId; }
     public String categoryId() { return categoryId; }
     public String groupId() { return groupId; }

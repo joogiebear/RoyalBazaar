@@ -1,3 +1,7 @@
+# Category that /bazaar opens straight into, by its file name in categories/ (e.g. "farming").
+# Leave empty to open the category hub instead.
+default-category: ""
+
 # ============================================================
 #  RoyalBazaar
 #  Algorithmic dynamic-pricing bazaar for the eco suite.

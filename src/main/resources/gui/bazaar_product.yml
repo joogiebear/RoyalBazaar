@@ -1,10 +1,14 @@
-# RoyalBazaar - product page (buy / sell one item).
-# Since the server is always the counterparty (algorithmic pricing, infinite depth),
-# there are no buy/sell orders - just instant buy and instant sell at the live quote.
+# RoyalBazaar - product page for one item.
+# A summary, not a keypad: the item and its live stats, one button per direction. Buying opens the
+# instant-buy menu (bazaar_buy.yml) where the quantity is chosen; selling is immediate.
+# Since the server is always the counterparty (algorithmic pricing, infinite depth), there are no
+# buy/sell orders - just instant buy and instant sell at the live quote.
+#
+# Click ids: rbazaar_open_buy · rbazaar_sell · rbazaar_back · close_inventory · play_sound
 
-title: "&8Bazaar &7› &f%rbazaar_item_display%"
+title: "%rbazaar_category_id% &7» &f%rbazaar_item_display%"
 command: []
-rows: 6
+rows: 4
 
 pages:
   - page: 1
@@ -13,10 +17,8 @@ pages:
         - black_stained_glass_pane
       pattern:
         - "111111111"
-        - "100000001"
-        - "100000001"
-        - "100000001"
-        - "100000001"
+        - "111111111"
+        - "111111111"
         - "111111111"
 
 slots:
@@ -30,86 +32,61 @@ slots:
       - ""
       - "&7Trend: %rbazaar_trend% &7(%rbazaar_change_24h% 24h)"
       - "&7Traded (24h): &f%rbazaar_volume_24h%"
-    row: 1
+      - ""
+      - "&7In your inventory: &f%rbazaar_held_amount%"
+    row: 2
     column: 5
 
-  # ---- BUY column ----
-  - item: lime_stained_glass_pane name:"&aBuy 1"
+  # ---- buy: choose a quantity on the next screen ----
+  - item: emerald name:"&aBuy Instantly"
     lore:
-      - "&7Cost: &a$%rbazaar_buy_cost_1%"
+      - "&7Buy Price: &a$%rbazaar_buy_price%"
+      - ""
+      - "&7Choose 1, a stack, a full"
+      - "&7inventory, or a custom amount."
+      - ""
+      - "&eClick to buy"
     row: 2
     column: 3
     left-click:
-      - id: rbazaar_buy
+      - id: rbazaar_open_buy
         args:
           item: "%rbazaar_item%"
-          amount: 1
-
-  - item: lime_stained_glass_pane name:"&aBuy 64"
-    lore:
-      - "&7Cost: &a$%rbazaar_buy_cost_64%"
-    row: 3
-    column: 3
-    left-click:
-      - id: rbazaar_buy
+      - id: play_sound
         args:
-          item: "%rbazaar_item%"
-          amount: 64
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
 
-  - item: lime_stained_glass_pane name:"&aBuy Custom Amount"
+  # ---- sell: everything you are carrying, immediately ----
+  - item: hopper name:"&eSell Instantly"
     lore:
-      - "&7Type the amount in chat."
-    row: 4
-    column: 3
-    left-click:
-      - id: rbazaar_buy_prompt
-        args:
-          item: "%rbazaar_item%"
-
-  # ---- SELL column ----
-  - item: red_stained_glass_pane name:"&eSell 1"
-    lore:
-      - "&7Receive: &e$%rbazaar_sell_value_1%"
-    row: 2
-    column: 7
-    left-click:
-      - id: rbazaar_sell
-        args:
-          item: "%rbazaar_item%"
-          amount: 1
-
-  - item: red_stained_glass_pane name:"&eSell 64"
-    lore:
-      - "&7Receive: &e$%rbazaar_sell_value_64%"
-    row: 3
-    column: 7
-    left-click:
-      - id: rbazaar_sell
-        args:
-          item: "%rbazaar_item%"
-          amount: 64
-
-  - item: red_stained_glass_pane name:"&eSell All"
-    lore:
+      - "&7Sell Price: &e$%rbazaar_sell_price%"
+      - ""
       - "&7You have: &f%rbazaar_held_amount%"
-      - "&7Receive: &e$%rbazaar_sell_value_all%"
-    row: 4
+      - "&7You receive: &e$%rbazaar_sell_value_all%"
+      - ""
+      - "&eClick to sell all of these"
+    row: 2
     column: 7
     left-click:
       - id: rbazaar_sell
         args:
           item: "%rbazaar_item%"
           amount: all
+      - id: play_sound
+        args:
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
 
   # ---- nav ----
-  - item: arrow name:"&fBack"
+  - item: arrow name:"&7« Back"
     lore: []
-    row: 6
+    row: 4
     column: 4
     left-click:
-      - id: open_menu
-        args:
-          menu: bazaar_main
+      - id: rbazaar_back
       - id: play_sound
         args:
           sound: ui_button_click
@@ -118,7 +95,7 @@ slots:
 
   - item: barrier name:"&cClose"
     lore: []
-    row: 6
-    column: 5
+    row: 4
+    column: 6
     left-click:
       - id: close_inventory
