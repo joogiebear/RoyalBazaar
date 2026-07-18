@@ -10,9 +10,12 @@ VERSION="$2"
 API="https://api.modrinth.com/v2"
 UA="joogiebear/plugin-release (joogiebear@protonmail.com)"
 
+# Publishing is opt-in per repo: a plugin with no Modrinth project simply has no token set.
+# Skipping keeps the GitHub release working instead of failing the whole run, and the warning
+# still shows up in the workflow summary if a repo that SHOULD publish has lost its token.
 if [ -z "${MODRINTH_TOKEN:-}" ]; then
-  echo "::error::MODRINTH_TOKEN secret is not set - cannot upload to Modrinth."
-  exit 1
+  echo "::warning::MODRINTH_TOKEN is not set - skipping the Modrinth upload for this repo."
+  exit 0
 fi
 
 ARTIFACT_ID=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.artifactId)
@@ -54,17 +57,10 @@ DATA=$(jq -cn \
     file_parts:["file"], primary_file:"file"}')
 
 echo "Uploading $JAR -> Modrinth project '$SLUG' ($PID), loaders $LOADERS"
-
-# Hand curl the JSON via a file, never inline. In -F, ';' begins the content-type parameter, so a
-# semicolon anywhere in the payload truncates the part mid-string and Modrinth rejects the result
-# as malformed JSON. One semicolon in one commit subject is enough to break a release, and the
-# error it produces ("EOF while parsing a string") points nowhere near the real cause.
-printf '%s' "$DATA" > modrinth_payload.json
-
 HTTP=$(curl -s -o resp.json -w '%{http_code}' -X POST "$API/version" \
   -H "Authorization: $MODRINTH_TOKEN" \
   -H "User-Agent: $UA" \
-  -F "data=@modrinth_payload.json;type=application/json" \
+  -F "data=$DATA;type=application/json" \
   -F "file=@$JAR;type=application/java-archive")
 
 if [ "$HTTP" -ge 200 ] && [ "$HTTP" -lt 300 ]; then
