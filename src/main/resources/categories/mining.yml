@@ -1,43 +1,485 @@
+# A bazaar category. The file name (mining) is the category id.
+# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+#
+# Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
+# Storage blocks are exactly 9x their component; nuggets are 1/9 of their ingot.
+# Crafted redstone gear is priced ABOVE the sum of its inputs, so no recipe prints money.
+
 name: "&bMining"
 icon: "minecraft:iron_pickaxe"
-slot: 13
+slot: 12
 
 defaults:
   spread: 0.05
-  elasticity: 40000
+  elasticity: 50000
   reversion_rate: 0.02
   floor_pct: 0.4
   ceiling_pct: 3.0
 
+groups:
+  stone:
+    name: "&7Stone & Cobblestone"
+    icon: "minecraft:cobblestone"
+    order: 1
+  deepslate:
+    name: "&8Deepslate"
+    icon: "minecraft:deepslate"
+    order: 2
+  coal:
+    name: "&8Coal"
+    icon: "minecraft:coal"
+    order: 3
+  copper:
+    name: "&6Copper"
+    icon: "minecraft:copper_ingot"
+    order: 4
+  iron:
+    name: "&fIron"
+    icon: "minecraft:iron_ingot"
+    order: 5
+  gold:
+    name: "&eGold"
+    icon: "minecraft:gold_ingot"
+    order: 6
+  redstone:
+    name: "&cRedstone"
+    icon: "minecraft:redstone"
+    order: 7
+  lapis:
+    name: "&9Lapis Lazuli"
+    icon: "minecraft:lapis_lazuli"
+    order: 8
+  quartz:
+    name: "&fNether Quartz"
+    icon: "minecraft:quartz"
+    order: 9
+  emerald:
+    name: "&aEmerald"
+    icon: "minecraft:emerald"
+    order: 10
+  diamond:
+    name: "&bDiamond"
+    icon: "minecraft:diamond"
+    order: 11
+  earth:
+    name: "&6Dirt, Sand & Gravel"
+    icon: "minecraft:sand"
+    order: 12
+  glass:
+    name: "&bGlass"
+    icon: "minecraft:glass"
+    order: 13
+  redstone_gear:
+    name: "&cRedstone Components"
+    icon: "minecraft:repeater"
+    order: 14
+
 items:
-  # --- explicit base price (bazaar owns the number) ---
+  # --- Stone & Cobblestone ---
   cobblestone:
     item: "minecraft:cobblestone"
+    group: stone
     base_price: 2.0
-    elasticity: 100000    # staple — very stable
+    elasticity: 150000    # staple — very stable
+  stone:
+    item: "minecraft:stone"
+    group: stone
+    base_price: 2.5
+  smooth_stone:
+    item: "minecraft:smooth_stone"
+    group: stone
+    base_price: 3.0
+  stone_bricks:
+    item: "minecraft:stone_bricks"
+    group: stone
+    base_price: 3.0
+  granite:
+    item: "minecraft:granite"
+    group: stone
+    base_price: 2.0
+  diorite:
+    item: "minecraft:diorite"
+    group: stone
+    base_price: 2.0
+  andesite:
+    item: "minecraft:andesite"
+    group: stone
+    base_price: 2.0
+  tuff:
+    item: "minecraft:tuff"
+    group: stone
+    base_price: 2.0
+  obsidian:
+    item: "minecraft:obsidian"
+    group: stone
+    base_price: 40.0
+  crying_obsidian:
+    item: "minecraft:crying_obsidian"
+    group: stone
+    base_price: 80.0
+
+  # --- Deepslate ---
+  cobbled_deepslate:
+    item: "minecraft:cobbled_deepslate"
+    group: deepslate
+    base_price: 2.5
+  deepslate:
+    item: "minecraft:deepslate"
+    group: deepslate
+    base_price: 3.0
+  deepslate_bricks:
+    item: "minecraft:deepslate_bricks"
+    group: deepslate
+    base_price: 4.0
+  sculk:
+    item: "minecraft:sculk"
+    group: deepslate
+    base_price: 8.0
+  sculk_sensor:
+    item: "minecraft:sculk_sensor"
+    group: deepslate
+    base_price: 50.0
+  sculk_catalyst:
+    item: "minecraft:sculk_catalyst"
+    group: deepslate
+    base_price: 90.0
+
+  # --- Coal ---
   coal:
     item: "minecraft:coal"
+    group: coal
+    base_price: 5.0
+  charcoal:
+    item: "minecraft:charcoal"
+    group: coal
     base_price: 4.0
+  coal_block:
+    item: "minecraft:coal_block"
+    group: coal
+    base_price: 45.0      # 9x coal
+  coal_ore:
+    item: "minecraft:coal_ore"
+    group: coal
+    base_price: 9.0       # silk touch only
 
-  # --- anchored to EcoShop (single source of truth) ---
-  # base_price: auto  -> EcoShop's buy value becomes the fair-value anchor
-  # npc_floor: true   -> bazaar sell can't drop below EcoShop's sell value (NPC is the floor)
-  # npc_ceiling: true -> bazaar buy can't rise above EcoShop's buy value (NPC is the ceiling)
+  # --- Copper ---
+  raw_copper:
+    item: "minecraft:raw_copper"
+    group: copper
+    base_price: 4.0
+  copper_ingot:
+    item: "minecraft:copper_ingot"
+    group: copper
+    base_price: 5.0
+  copper_block:
+    item: "minecraft:copper_block"
+    group: copper
+    base_price: 45.0      # 9x ingot
+  copper_ore:
+    item: "minecraft:copper_ore"
+    group: copper
+    base_price: 8.0
+  lightning_rod:
+    item: "minecraft:lightning_rod"
+    group: copper
+    base_price: 17.0      # 3 copper ingots
+
+  # --- Iron ---
+  raw_iron:
+    item: "minecraft:raw_iron"
+    group: iron
+    base_price: 10.0
+  iron_ingot:
+    item: "minecraft:iron_ingot"
+    group: iron
+    base_price: 12.0
+    elasticity: 80000
+  iron_nugget:
+    item: "minecraft:iron_nugget"
+    group: iron
+    base_price: 1.33      # 1/9 ingot
   iron_block:
     item: "minecraft:iron_block"
-    base_price: auto
-    npc_floor: true
-    npc_ceiling: true
+    group: iron
+    base_price: 108.0     # 9x ingot
+  raw_iron_block:
+    item: "minecraft:raw_iron_block"
+    group: iron
+    base_price: 90.0      # 9x raw
+  iron_ore:
+    item: "minecraft:iron_ore"
+    group: iron
+    base_price: 15.0
+  iron_bars:
+    item: "minecraft:iron_bars"
+    group: iron
+    base_price: 5.0       # 6 ingots (72) yields 16
+  chain:
+    item: "minecraft:chain"
+    group: iron
+    base_price: 16.0      # ingot + 2 nuggets
+  bucket:
+    item: "minecraft:bucket"
+    group: iron
+    base_price: 40.0      # 3 ingots
+  anvil:
+    item: "minecraft:anvil"
+    group: iron
+    base_price: 400.0     # 31 ingots (372)
+
+  # --- Gold ---
+  raw_gold:
+    item: "minecraft:raw_gold"
+    group: gold
+    base_price: 17.0
+  gold_ingot:
+    item: "minecraft:gold_ingot"
+    group: gold
+    base_price: 20.0
+  gold_nugget:
+    item: "minecraft:gold_nugget"
+    group: gold
+    base_price: 2.22      # 1/9 ingot
+  gold_block:
+    item: "minecraft:gold_block"
+    group: gold
+    base_price: 180.0     # 9x ingot
+  gold_ore:
+    item: "minecraft:gold_ore"
+    group: gold
+    base_price: 25.0
+  nether_gold_ore:
+    item: "minecraft:nether_gold_ore"
+    group: gold
+    base_price: 20.0
+
+  # --- Redstone ---
+  redstone:
+    item: "minecraft:redstone"
+    group: redstone
+    base_price: 6.0
+  redstone_block:
+    item: "minecraft:redstone_block"
+    group: redstone
+    base_price: 54.0      # 9x redstone
+  redstone_ore:
+    item: "minecraft:redstone_ore"
+    group: redstone
+    base_price: 14.0
+  glowstone_dust:
+    item: "minecraft:glowstone_dust"
+    group: redstone
+    base_price: 6.0
+  glowstone:
+    item: "minecraft:glowstone"
+    group: redstone
+    base_price: 26.0      # 4 dust
+
+  # --- Lapis Lazuli ---
+  lapis_lazuli:
+    item: "minecraft:lapis_lazuli"
+    group: lapis
+    base_price: 6.0
+  lapis_block:
+    item: "minecraft:lapis_block"
+    group: lapis
+    base_price: 54.0      # 9x lapis
+  lapis_ore:
+    item: "minecraft:lapis_ore"
+    group: lapis
+    base_price: 14.0
+
+  # --- Nether Quartz ---
+  quartz:
+    item: "minecraft:quartz"
+    group: quartz
+    base_price: 8.0
+  quartz_block:
+    item: "minecraft:quartz_block"
+    group: quartz
+    base_price: 34.0      # 4 quartz
+  nether_quartz_ore:
+    item: "minecraft:nether_quartz_ore"
+    group: quartz
+    base_price: 15.0
+
+  # --- Emerald ---
+  emerald:
+    item: "minecraft:emerald"
+    group: emerald
+    base_price: 60.0
+  emerald_block:
+    item: "minecraft:emerald_block"
+    group: emerald
+    base_price: 540.0     # 9x emerald
+  emerald_ore:
+    item: "minecraft:emerald_ore"
+    group: emerald
+    base_price: 100.0
+
+  # --- Diamond ---
+  diamond:
+    item: "minecraft:diamond"
+    group: diamond
+    base_price: 120.0
+    elasticity: 20000     # thinner market — moves faster
   diamond_block:
     item: "minecraft:diamond_block"
-    base_price: auto
-    npc_floor: true
-
-  # --- custom EcoItems (note the ecoitems: plural namespace) ---
-  enchanted_cobblestone:
-    item: "ecoitems:enchanted_cobblestone"
-    base_price: 320.0
+    group: diamond
+    base_price: 1080.0    # 9x diamond
+  diamond_ore:
+    item: "minecraft:diamond_ore"
+    group: diamond
+    base_price: 200.0
     ceiling_pct: 4.0
-  enchanted_iron_ingot:
-    item: "ecoitems:enchanted_iron_ingot"
-    base_price: 1200.0
+
+  # --- Dirt, Sand & Gravel ---
+  dirt:
+    item: "minecraft:dirt"
+    group: earth
+    base_price: 1.0
+    elasticity: 150000
+  grass_block:
+    item: "minecraft:grass_block"
+    group: earth
+    base_price: 2.0
+  podzol:
+    item: "minecraft:podzol"
+    group: earth
+    base_price: 3.0
+  mycelium:
+    item: "minecraft:mycelium"
+    group: earth
+    base_price: 8.0
+  sand:
+    item: "minecraft:sand"
+    group: earth
+    base_price: 2.0
+  red_sand:
+    item: "minecraft:red_sand"
+    group: earth
+    base_price: 2.0
+  sandstone:
+    item: "minecraft:sandstone"
+    group: earth
+    base_price: 9.0       # 4 sand
+  gravel:
+    item: "minecraft:gravel"
+    group: earth
+    base_price: 2.0
+  flint:
+    item: "minecraft:flint"
+    group: earth
+    base_price: 3.0
+  clay_ball:
+    item: "minecraft:clay_ball"
+    group: earth
+    base_price: 3.0
+  clay:
+    item: "minecraft:clay"
+    group: earth
+    base_price: 13.0      # 4 clay balls
+  brick:
+    item: "minecraft:brick"
+    group: earth
+    base_price: 4.0       # smelted clay ball
+  bricks:
+    item: "minecraft:bricks"
+    group: earth
+    base_price: 17.0      # 4 bricks
+  terracotta:
+    item: "minecraft:terracotta"
+    group: earth
+    base_price: 4.0
+  netherrack:
+    item: "minecraft:netherrack"
+    group: earth
+    base_price: 1.0
+  basalt:
+    item: "minecraft:basalt"
+    group: earth
+    base_price: 2.0
+  blackstone:
+    item: "minecraft:blackstone"
+    group: earth
+    base_price: 3.0
+  gilded_blackstone:
+    item: "minecraft:gilded_blackstone"
+    group: earth
+    base_price: 60.0
+  magma_block:
+    item: "minecraft:magma_block"
+    group: earth
+    base_price: 8.0
+  soul_sand:
+    item: "minecraft:soul_sand"
+    group: earth
+    base_price: 4.0
+  soul_soil:
+    item: "minecraft:soul_soil"
+    group: earth
+    base_price: 4.0
+
+  # --- Glass ---
+  glass:
+    item: "minecraft:glass"
+    group: glass
+    base_price: 3.0       # smelted sand (2.0)
+  glass_pane:
+    item: "minecraft:glass_pane"
+    group: glass
+    base_price: 1.0       # 6 glass (18) yields 16
+  tinted_glass:
+    item: "minecraft:tinted_glass"
+    group: glass
+    base_price: 30.0      # glass + 4 amethyst shards
+
+  # --- Redstone Components ---
+  redstone_torch:
+    item: "minecraft:redstone_torch"
+    group: redstone_gear
+    base_price: 8.0       # stick + redstone
+  repeater:
+    item: "minecraft:repeater"
+    group: redstone_gear
+    base_price: 32.0      # 2 torches + redstone + 3 stone
+  comparator:
+    item: "minecraft:comparator"
+    group: redstone_gear
+    base_price: 42.0      # 3 torches + quartz + 3 stone
+  piston:
+    item: "minecraft:piston"
+    group: redstone_gear
+    base_price: 35.0      # 3 planks + 4 cobble + iron + redstone
+  sticky_piston:
+    item: "minecraft:sticky_piston"
+    group: redstone_gear
+    base_price: 55.0      # piston + slime ball
+  observer:
+    item: "minecraft:observer"
+    group: redstone_gear
+    base_price: 36.0      # 6 cobble + 2 redstone + quartz
+  hopper:
+    item: "minecraft:hopper"
+    group: redstone_gear
+    base_price: 90.0      # 5 iron + chest
+  target:
+    item: "minecraft:target"
+    group: redstone_gear
+    base_price: 55.0      # 4 redstone + hay block
+  redstone_lamp:
+    item: "minecraft:redstone_lamp"
+    group: redstone_gear
+    base_price: 54.0      # 4 redstone + glowstone
+  tnt:
+    item: "minecraft:tnt"
+    group: redstone_gear
+    base_price: 62.0      # 5 gunpowder + 4 sand
+  rail:
+    item: "minecraft:rail"
+    group: redstone_gear
+    base_price: 6.0       # 6 iron + stick yields 16
+  powered_rail:
+    item: "minecraft:powered_rail"
+    group: redstone_gear
+    base_price: 23.0      # 6 gold + stick + redstone yields 6

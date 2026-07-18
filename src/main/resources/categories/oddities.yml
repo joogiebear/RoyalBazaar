@@ -1,0 +1,311 @@
+# A bazaar category. The file name (oddities) is the category id.
+# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+#
+# Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
+# This is the tail of the economy: end/nether goods, brewing glassware, amethyst, deep dark,
+# archaeology and the genuinely rare drops. Rare items get a higher ceiling_pct and a lower
+# elasticity, so a thin market is allowed to move — that is the point of a rare.
+
+name: "&dOddities"
+icon: "minecraft:ender_pearl"
+slot: 15
+
+defaults:
+  spread: 0.05
+  elasticity: 50000
+  reversion_rate: 0.02
+  floor_pct: 0.4
+  ceiling_pct: 3.0
+
+groups:
+  nether:
+    name: "&4Nether"
+    icon: "minecraft:nether_bricks"
+    order: 1
+  netherite:
+    name: "&8Netherite"
+    icon: "minecraft:netherite_ingot"
+    order: 2
+  end:
+    name: "&5The End"
+    icon: "minecraft:end_stone"
+    order: 3
+  amethyst:
+    name: "&dAmethyst"
+    icon: "minecraft:amethyst_shard"
+    order: 4
+  deep_dark:
+    name: "&3Deep Dark"
+    icon: "minecraft:echo_shard"
+    order: 5
+  brewing:
+    name: "&5Brewing"
+    icon: "minecraft:brewing_stand"
+    order: 6
+  archaeology:
+    name: "&6Archaeology"
+    icon: "minecraft:brush"
+    order: 7
+  valuables:
+    name: "&eValuables"
+    icon: "minecraft:beacon"
+    order: 8
+
+items:
+  # --- Nether ---
+  nether_brick:
+    item: "minecraft:nether_brick"
+    group: nether
+    base_price: 1.5       # smelted netherrack (1.0)
+  nether_bricks:
+    item: "minecraft:nether_bricks"
+    group: nether
+    base_price: 7.0       # 4 nether bricks
+
+  # --- Netherite ---
+  ancient_debris:
+    item: "minecraft:ancient_debris"
+    group: netherite
+    base_price: 700.0
+    ceiling_pct: 4.0
+    elasticity: 8000
+  netherite_scrap:
+    item: "minecraft:netherite_scrap"
+    group: netherite
+    base_price: 700.0     # smelted 1:1 from debris
+    ceiling_pct: 4.0
+    elasticity: 8000
+  netherite_ingot:
+    item: "minecraft:netherite_ingot"
+    group: netherite
+    base_price: 3000.0    # 4 scrap (2800) + 4 gold ingots (80)
+    ceiling_pct: 4.0
+    elasticity: 3000
+  netherite_block:
+    item: "minecraft:netherite_block"
+    group: netherite
+    base_price: 27000.0   # 9x ingot
+    ceiling_pct: 4.0
+    elasticity: 500
+  netherite_upgrade_smithing_template:
+    item: "minecraft:netherite_upgrade_smithing_template"
+    group: netherite
+    base_price: 1200.0    # duplicating one costs 7 diamonds (840) — must stay above that
+    ceiling_pct: 4.0
+    elasticity: 5000
+
+  # --- The End ---
+  end_stone:
+    item: "minecraft:end_stone"
+    group: end
+    base_price: 6.0
+  end_stone_bricks:
+    item: "minecraft:end_stone_bricks"
+    group: end
+    base_price: 6.0       # 4 end stone yields 4 — cannot exceed the input
+  chorus_fruit:
+    item: "minecraft:chorus_fruit"
+    group: end
+    base_price: 8.0
+  popped_chorus_fruit:
+    item: "minecraft:popped_chorus_fruit"
+    group: end
+    base_price: 9.0       # smelted chorus fruit
+  purpur_block:
+    item: "minecraft:purpur_block"
+    group: end
+    base_price: 8.0       # 4 popped yields 4
+  purpur_pillar:
+    item: "minecraft:purpur_pillar"
+    group: end
+    base_price: 8.0
+  ender_chest:
+    item: "minecraft:ender_chest"
+    group: end
+    base_price: 420.0     # 8 obsidian (320) + eye of ender (72)
+  end_rod:
+    item: "minecraft:end_rod"
+    group: end
+    base_price: 12.0      # blaze rod + popped chorus (49.0) yields 4
+  dragon_breath:
+    item: "minecraft:dragon_breath"
+    group: end
+    base_price: 300.0
+    ceiling_pct: 4.0
+    elasticity: 6000
+  elytra:
+    item: "minecraft:elytra"
+    group: end
+    base_price: 2500.0
+    ceiling_pct: 5.0
+    elasticity: 2000
+  end_crystal:
+    item: "minecraft:end_crystal"
+    group: end
+    base_price: 230.0     # 7 glass + eye of ender + ghast tear
+
+  # --- Amethyst ---
+  amethyst_shard:
+    item: "minecraft:amethyst_shard"
+    group: amethyst
+    base_price: 25.0
+  amethyst_block:
+    item: "minecraft:amethyst_block"
+    group: amethyst
+    base_price: 104.0     # 4 shards
+  amethyst_cluster:
+    item: "minecraft:amethyst_cluster"
+    group: amethyst
+    base_price: 110.0     # breaks into 4 shards (100) — must sit above that
+  spyglass:
+    item: "minecraft:spyglass"
+    group: amethyst
+    base_price: 40.0      # 2 copper ingots + amethyst shard
+
+  # --- Deep Dark ---
+  echo_shard:
+    item: "minecraft:echo_shard"
+    group: deep_dark
+    base_price: 250.0
+    ceiling_pct: 4.0
+    elasticity: 8000
+  recovery_compass:
+    item: "minecraft:recovery_compass"
+    group: deep_dark
+    base_price: 2200.0    # 8 echo shards (2000) + compass
+    ceiling_pct: 4.0
+    elasticity: 2000
+  disc_fragment_5:
+    item: "minecraft:disc_fragment_5"
+    group: deep_dark
+    base_price: 60.0
+  music_disc_5:
+    item: "minecraft:music_disc_5"
+    group: deep_dark
+    base_price: 560.0     # 9 fragments (540)
+    ceiling_pct: 4.0
+  music_disc_pigstep:
+    item: "minecraft:music_disc_pigstep"
+    group: deep_dark
+    base_price: 800.0
+    ceiling_pct: 4.0
+
+  # --- Brewing ---
+  glass_bottle:
+    item: "minecraft:glass_bottle"
+    group: brewing
+    base_price: 3.0       # 3 glass (9.0) yields 3
+  brewing_stand:
+    item: "minecraft:brewing_stand"
+    group: brewing
+    base_price: 52.0      # blaze rod + 3 cobblestone
+  cauldron:
+    item: "minecraft:cauldron"
+    group: brewing
+    base_price: 92.0      # 7 iron ingots (84)
+  compass:
+    item: "minecraft:compass"
+    group: brewing
+    base_price: 60.0      # 4 iron + redstone
+  clock:
+    item: "minecraft:clock"
+    group: brewing
+    base_price: 90.0      # 4 gold ingots (80) + redstone
+  flint_and_steel:
+    item: "minecraft:flint_and_steel"
+    group: brewing
+    base_price: 20.0      # flint + iron ingot
+
+  # --- Archaeology ---
+  brush:
+    item: "minecraft:brush"
+    group: archaeology
+    base_price: 12.0      # feather + copper ingot + stick
+  skull_pottery_sherd:
+    item: "minecraft:skull_pottery_sherd"
+    group: archaeology
+    base_price: 250.0
+    ceiling_pct: 4.0
+  decorated_pot:
+    item: "minecraft:decorated_pot"
+    group: archaeology
+    base_price: 20.0      # 4 bricks — sherds are optional, so price it off bricks
+  torchflower_seeds:
+    item: "minecraft:torchflower_seeds"
+    group: archaeology
+    base_price: 150.0
+  pitcher_pod:
+    item: "minecraft:pitcher_pod"
+    group: archaeology
+    base_price: 150.0
+  sniffer_egg:
+    item: "minecraft:sniffer_egg"
+    group: archaeology
+    base_price: 400.0
+    ceiling_pct: 4.0
+
+  # --- Valuables ---
+  beacon:
+    item: "minecraft:beacon"
+    group: valuables
+    base_price: 8600.0    # nether star (8000) + 3 obsidian + 5 glass
+    ceiling_pct: 4.0
+    elasticity: 800
+  conduit:
+    item: "minecraft:conduit"
+    group: valuables
+    base_price: 2200.0    # 8 nautilus shells (1200) + heart of the sea (800)
+    ceiling_pct: 4.0
+    elasticity: 2000
+  mace:
+    item: "minecraft:mace"
+    group: valuables
+    base_price: 2400.0    # heavy core (2000) + breeze rod (150)
+    ceiling_pct: 4.0
+    elasticity: 2000
+  enchanted_book:
+    item: "minecraft:enchanted_book"
+    group: valuables
+    base_price: 400.0     # generic — enchantment NBT is not priced separately
+    ceiling_pct: 4.0
+  goat_horn:
+    item: "minecraft:goat_horn"
+    group: valuables
+    base_price: 200.0
+  silence_armor_trim_smithing_template:
+    item: "minecraft:silence_armor_trim_smithing_template"
+    group: valuables
+    base_price: 1400.0
+    ceiling_pct: 4.0
+  respawn_anchor:
+    item: "minecraft:respawn_anchor"
+    group: valuables
+    base_price: 600.0     # 6 crying obsidian (480) + 3 glowstone (78)
+
+  # ---------------------------------------------------------------------------
+  # OPTIONAL: custom EcoItems entries.
+  #
+  # Everything above is vanilla, so this file loads clean on any server. The block below
+  # is an example of hooking a custom item from the EcoItems plugin into the bazaar.
+  #
+  # Note the 'ecoitems:' (plural) namespace. Uncomment ONLY if EcoItems is installed AND
+  # actually defines an item with that id — otherwise the bazaar logs a warning on every
+  # startup and the entry is skipped.
+  #
+  # 'base_price: auto' instead of a number anchors the item to EcoShop's buy value, so the
+  # shop stays the single source of truth; 'npc_floor'/'npc_ceiling' then pin the bazaar's
+  # range to the NPC's, which is what stops compression from becoming a money printer.
+  #
+  # enchanted_ender_pearl:
+  #   item: "ecoitems:enchanted_ender_pearl"
+  #   group: valuables
+  #   base_price: 7200.0     # 160x ender_pearl (45.0) — the usual compression multiplier
+  #   ceiling_pct: 4.0       # rare + thin market, so allow a wider swing than the 3.0 default
+  #   elasticity: 5000       # a thin market should move faster than a staple's 50000
+  #
+  # enchanted_diamond:
+  #   item: "ecoitems:enchanted_diamond"
+  #   base_price: auto       # let EcoShop own the number
+  #   npc_floor: true        # bazaar sell can never drop below the NPC's sell price
+  #   npc_ceiling: true      # bazaar buy can never rise above the NPC's buy price
+  # ---------------------------------------------------------------------------

@@ -1,0 +1,332 @@
+# A bazaar category. The file name (combat) is the category id.
+# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+#
+# Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
+# Mob drops are priced by how dangerous/slow the mob is to farm. Gear is priced ABOVE its
+# material cost (see mining.yml for the ingot anchors), so smelting loot into armour never pays.
+
+name: "&cCombat"
+icon: "minecraft:iron_sword"
+slot: 13
+
+defaults:
+  spread: 0.05
+  elasticity: 50000
+  reversion_rate: 0.02
+  floor_pct: 0.4
+  ceiling_pct: 3.0
+
+groups:
+  bone:
+    name: "&fBone"
+    icon: "minecraft:bone"
+    order: 1
+  string:
+    name: "&fString & Web"
+    icon: "minecraft:string"
+    order: 2
+  gunpowder:
+    name: "&8Gunpowder"
+    icon: "minecraft:gunpowder"
+    order: 3
+  spider_eye:
+    name: "&2Spider Eye"
+    icon: "minecraft:spider_eye"
+    order: 4
+  undead:
+    name: "&2Zombie & Drowned"
+    icon: "minecraft:rotten_flesh"
+    order: 5
+  blaze:
+    name: "&6Blaze"
+    icon: "minecraft:blaze_rod"
+    order: 6
+  slime:
+    name: "&aSlime & Magma"
+    icon: "minecraft:slime_ball"
+    order: 7
+  ender:
+    name: "&5Enderman"
+    icon: "minecraft:ender_pearl"
+    order: 8
+  ghast:
+    name: "&fGhast"
+    icon: "minecraft:ghast_tear"
+    order: 9
+  phantom:
+    name: "&bPhantom"
+    icon: "minecraft:phantom_membrane"
+    order: 10
+  shulker:
+    name: "&5Shulker"
+    icon: "minecraft:shulker_shell"
+    order: 11
+  trial:
+    name: "&9Trial Chambers"
+    icon: "minecraft:breeze_rod"
+    order: 12
+  bows:
+    name: "&eBows & Arrows"
+    icon: "minecraft:bow"
+    order: 13
+  armor:
+    name: "&7Armour"
+    icon: "minecraft:iron_chestplate"
+    order: 14
+  weapons:
+    name: "&cWeapons"
+    icon: "minecraft:diamond_sword"
+    order: 15
+  rare:
+    name: "&dRare Drops"
+    icon: "minecraft:totem_of_undying"
+    order: 16
+
+items:
+  # --- Bone ---
+  bone:
+    item: "minecraft:bone"
+    group: bone
+    base_price: 5.0
+  bone_block:
+    item: "minecraft:bone_block"
+    group: bone
+    base_price: 16.0      # 9 bone meal = 3 bones
+
+  # --- String & Web ---
+  string:
+    item: "minecraft:string"
+    group: string
+    base_price: 4.0
+  cobweb:
+    item: "minecraft:cobweb"
+    group: string
+    base_price: 25.0
+
+  # --- Gunpowder ---
+  gunpowder:
+    item: "minecraft:gunpowder"
+    group: gunpowder
+    base_price: 10.0
+
+  # --- Spider Eye ---
+  spider_eye:
+    item: "minecraft:spider_eye"
+    group: spider_eye
+    base_price: 6.0
+  fermented_spider_eye:
+    item: "minecraft:fermented_spider_eye"
+    group: spider_eye
+    base_price: 15.0      # spider eye + sugar + brown mushroom
+
+  # --- Zombie & Drowned ---
+  rotten_flesh:
+    item: "minecraft:rotten_flesh"
+    group: undead
+    base_price: 2.0
+    elasticity: 120000    # everyone has a stack of it
+  nautilus_shell:
+    item: "minecraft:nautilus_shell"
+    group: undead
+    base_price: 150.0
+  heart_of_the_sea:
+    item: "minecraft:heart_of_the_sea"
+    group: undead
+    base_price: 800.0
+    ceiling_pct: 4.0
+    elasticity: 5000
+
+  # --- Blaze ---
+  blaze_rod:
+    item: "minecraft:blaze_rod"
+    group: blaze
+    base_price: 40.0
+  blaze_powder:
+    item: "minecraft:blaze_powder"
+    group: blaze
+    base_price: 22.0      # 1 rod yields 2
+
+  # --- Slime & Magma ---
+  slime_ball:
+    item: "minecraft:slime_ball"
+    group: slime
+    base_price: 15.0
+  slime_block:
+    item: "minecraft:slime_block"
+    group: slime
+    base_price: 140.0     # 9x slime ball
+  magma_cream:
+    item: "minecraft:magma_cream"
+    group: slime
+    base_price: 40.0      # slime ball + blaze powder
+
+  # --- Enderman ---
+  ender_pearl:
+    item: "minecraft:ender_pearl"
+    group: ender
+    base_price: 45.0
+  ender_eye:
+    item: "minecraft:ender_eye"
+    group: ender
+    base_price: 72.0      # pearl + blaze powder
+
+  # --- Ghast ---
+  ghast_tear:
+    item: "minecraft:ghast_tear"
+    group: ghast
+    base_price: 120.0
+    ceiling_pct: 4.0
+
+  # --- Phantom ---
+  phantom_membrane:
+    item: "minecraft:phantom_membrane"
+    group: phantom
+    base_price: 60.0
+
+  # --- Shulker ---
+  shulker_shell:
+    item: "minecraft:shulker_shell"
+    group: shulker
+    base_price: 300.0
+    ceiling_pct: 4.0
+    elasticity: 12000
+
+  # --- Trial Chambers ---
+  breeze_rod:
+    item: "minecraft:breeze_rod"
+    group: trial
+    base_price: 150.0
+  wind_charge:
+    item: "minecraft:wind_charge"
+    group: trial
+    base_price: 40.0      # 1 breeze rod yields 4
+  trial_key:
+    item: "minecraft:trial_key"
+    group: trial
+    base_price: 200.0
+  ominous_trial_key:
+    item: "minecraft:ominous_trial_key"
+    group: trial
+    base_price: 400.0
+  heavy_core:
+    item: "minecraft:heavy_core"
+    group: trial
+    base_price: 2000.0
+    ceiling_pct: 5.0
+    elasticity: 2000
+
+  # --- Bows & Arrows ---
+  arrow:
+    item: "minecraft:arrow"
+    group: bows
+    base_price: 1.5       # flint + stick + feather (7.5) yields 4
+  spectral_arrow:
+    item: "minecraft:spectral_arrow"
+    group: bows
+    base_price: 14.0      # arrow + 4 glowstone dust yields 2
+  bow:
+    item: "minecraft:bow"
+    group: bows
+    base_price: 20.0      # 3 sticks + 3 string
+  crossbow:
+    item: "minecraft:crossbow"
+    group: bows
+    base_price: 34.0      # 3 sticks + 2 string + iron + tripwire hook
+
+  # --- Armour ---
+  iron_helmet:
+    item: "minecraft:iron_helmet"
+    group: armor
+    base_price: 66.0      # 5 ingots
+  iron_chestplate:
+    item: "minecraft:iron_chestplate"
+    group: armor
+    base_price: 105.0     # 8 ingots
+  iron_leggings:
+    item: "minecraft:iron_leggings"
+    group: armor
+    base_price: 92.0      # 7 ingots
+  iron_boots:
+    item: "minecraft:iron_boots"
+    group: armor
+    base_price: 53.0      # 4 ingots
+  diamond_helmet:
+    item: "minecraft:diamond_helmet"
+    group: armor
+    base_price: 660.0     # 5 diamonds
+  diamond_chestplate:
+    item: "minecraft:diamond_chestplate"
+    group: armor
+    base_price: 1050.0    # 8 diamonds
+  diamond_leggings:
+    item: "minecraft:diamond_leggings"
+    group: armor
+    base_price: 920.0     # 7 diamonds
+  diamond_boots:
+    item: "minecraft:diamond_boots"
+    group: armor
+    base_price: 530.0     # 4 diamonds
+  turtle_helmet:
+    item: "minecraft:turtle_helmet"
+    group: armor
+    base_price: 350.0     # 5 turtle scutes
+  shield:
+    item: "minecraft:shield"
+    group: armor
+    base_price: 22.0      # 6 planks + iron ingot
+
+  # --- Weapons ---
+  iron_sword:
+    item: "minecraft:iron_sword"
+    group: weapons
+    base_price: 28.0      # 2 ingots + stick
+  golden_sword:
+    item: "minecraft:golden_sword"
+    group: weapons
+    base_price: 45.0      # 2 ingots + stick
+  diamond_sword:
+    item: "minecraft:diamond_sword"
+    group: weapons
+    base_price: 265.0     # 2 diamonds + stick
+  trident:
+    item: "minecraft:trident"
+    group: weapons
+    base_price: 800.0
+    ceiling_pct: 4.0
+    elasticity: 5000
+
+  # --- Rare Drops ---
+  totem_of_undying:
+    item: "minecraft:totem_of_undying"
+    group: rare
+    base_price: 1500.0
+    ceiling_pct: 4.0
+    elasticity: 3000
+  nether_star:
+    item: "minecraft:nether_star"
+    group: rare
+    base_price: 8000.0
+    ceiling_pct: 5.0
+    elasticity: 1000
+  wither_skeleton_skull:
+    item: "minecraft:wither_skeleton_skull"
+    group: rare
+    base_price: 800.0
+    ceiling_pct: 4.0
+    elasticity: 6000
+  saddle:
+    item: "minecraft:saddle"
+    group: rare
+    base_price: 120.0
+  name_tag:
+    item: "minecraft:name_tag"
+    group: rare
+    base_price: 150.0
+  experience_bottle:
+    item: "minecraft:experience_bottle"
+    group: rare
+    base_price: 40.0
+  turtle_scute:
+    item: "minecraft:turtle_scute"
+    group: rare
+    base_price: 60.0

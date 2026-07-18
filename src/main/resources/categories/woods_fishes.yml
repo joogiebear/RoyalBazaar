@@ -1,0 +1,369 @@
+# A bazaar category. The file name (woods_fishes) is the category id.
+# 'slot' is its position in the main menu. Items inherit 'defaults' unless they override a field.
+#
+# Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
+# Wood chain: 1 log (4.0) -> 4 planks (1.0 each) -> sticks (0.5 each). Every step is break-even
+# BEFORE the spread, so milling logs is never a money printer.
+
+name: "&6Woods & Fishes"
+icon: "minecraft:oak_log"
+slot: 14
+
+defaults:
+  spread: 0.05
+  elasticity: 50000
+  reversion_rate: 0.02
+  floor_pct: 0.4
+  ceiling_pct: 3.0
+
+groups:
+  logs:
+    name: "&6Logs"
+    icon: "minecraft:oak_log"
+    order: 1
+  planks:
+    name: "&6Planks & Sticks"
+    icon: "minecraft:oak_planks"
+    order: 3
+  saplings:
+    name: "&aSaplings & Leaves"
+    icon: "minecraft:oak_sapling"
+    order: 4
+  nether_wood:
+    name: "&5Nether Wood"
+    icon: "minecraft:crimson_stem"
+    order: 5
+  bamboo:
+    name: "&aBamboo"
+    icon: "minecraft:bamboo"
+    order: 6
+  fish:
+    name: "&bFish"
+    icon: "minecraft:cod"
+    order: 7
+  sea:
+    name: "&3Kelp & Sea Life"
+    icon: "minecraft:kelp"
+    order: 8
+  prismarine:
+    name: "&3Prismarine"
+    icon: "minecraft:prismarine_shard"
+    order: 9
+  coral:
+    name: "&dCoral"
+    icon: "minecraft:brain_coral_block"
+    order: 10
+
+items:
+  # --- Logs ---
+  oak_log:
+    item: "minecraft:oak_log"
+    group: logs
+    base_price: 4.0
+    elasticity: 120000    # staple — very stable
+  spruce_log:
+    item: "minecraft:spruce_log"
+    group: logs
+    base_price: 4.0
+  birch_log:
+    item: "minecraft:birch_log"
+    group: logs
+    base_price: 4.0
+  jungle_log:
+    item: "minecraft:jungle_log"
+    group: logs
+    base_price: 4.0
+  acacia_log:
+    item: "minecraft:acacia_log"
+    group: logs
+    base_price: 4.0
+  dark_oak_log:
+    item: "minecraft:dark_oak_log"
+    group: logs
+    base_price: 4.0
+  mangrove_log:
+    item: "minecraft:mangrove_log"
+    group: logs
+    base_price: 4.0
+  cherry_log:
+    item: "minecraft:cherry_log"
+    group: logs
+    base_price: 5.0
+  pale_oak_log:
+    item: "minecraft:pale_oak_log"
+    group: logs
+    base_price: 5.0
+
+  # --- Planks & Sticks ---
+  # 4 planks come out of one log, so a plank must not exceed a quarter of its log.
+  oak_planks:
+    item: "minecraft:oak_planks"
+    group: planks
+    base_price: 1.0
+    elasticity: 200000
+  spruce_planks:
+    item: "minecraft:spruce_planks"
+    group: planks
+    base_price: 1.0
+  birch_planks:
+    item: "minecraft:birch_planks"
+    group: planks
+    base_price: 1.0
+  jungle_planks:
+    item: "minecraft:jungle_planks"
+    group: planks
+    base_price: 1.0
+  acacia_planks:
+    item: "minecraft:acacia_planks"
+    group: planks
+    base_price: 1.0
+  dark_oak_planks:
+    item: "minecraft:dark_oak_planks"
+    group: planks
+    base_price: 1.0
+  mangrove_planks:
+    item: "minecraft:mangrove_planks"
+    group: planks
+    base_price: 1.0
+  cherry_planks:
+    item: "minecraft:cherry_planks"
+    group: planks
+    base_price: 1.25
+  pale_oak_planks:
+    item: "minecraft:pale_oak_planks"
+    group: planks
+    base_price: 1.25
+  stick:
+    item: "minecraft:stick"
+    group: planks
+    base_price: 0.5       # 2 planks yield 4
+  chest:
+    item: "minecraft:chest"
+    group: planks
+    base_price: 20.0      # 8 planks
+  crafting_table:
+    item: "minecraft:crafting_table"
+    group: planks
+    base_price: 8.0
+  barrel:
+    item: "minecraft:barrel"
+    group: planks
+    base_price: 20.0
+  ladder:
+    item: "minecraft:ladder"
+    group: planks
+    base_price: 1.0       # 7 sticks yield 3
+  torch:
+    item: "minecraft:torch"
+    group: planks
+    base_price: 1.25      # coal + stick (5.5) yields 4
+
+  # --- Saplings & Leaves ---
+  oak_sapling:
+    item: "minecraft:oak_sapling"
+    group: saplings
+    base_price: 3.0
+  spruce_sapling:
+    item: "minecraft:spruce_sapling"
+    group: saplings
+    base_price: 3.0
+  birch_sapling:
+    item: "minecraft:birch_sapling"
+    group: saplings
+    base_price: 3.0
+  jungle_sapling:
+    item: "minecraft:jungle_sapling"
+    group: saplings
+    base_price: 3.0
+  acacia_sapling:
+    item: "minecraft:acacia_sapling"
+    group: saplings
+    base_price: 3.0
+  dark_oak_sapling:
+    item: "minecraft:dark_oak_sapling"
+    group: saplings
+    base_price: 3.0
+  cherry_sapling:
+    item: "minecraft:cherry_sapling"
+    group: saplings
+    base_price: 5.0
+  mangrove_propagule:
+    item: "minecraft:mangrove_propagule"
+    group: saplings
+    base_price: 4.0
+  moss_block:
+    item: "minecraft:moss_block"
+    group: saplings
+    base_price: 5.0
+  vine:
+    item: "minecraft:vine"
+    group: saplings
+    base_price: 2.0
+  lily_pad:
+    item: "minecraft:lily_pad"
+    group: saplings
+    base_price: 4.0
+
+  # --- Nether Wood ---
+  crimson_stem:
+    item: "minecraft:crimson_stem"
+    group: nether_wood
+    base_price: 5.0
+  warped_stem:
+    item: "minecraft:warped_stem"
+    group: nether_wood
+    base_price: 5.0
+  crimson_planks:
+    item: "minecraft:crimson_planks"
+    group: nether_wood
+    base_price: 1.25
+  warped_planks:
+    item: "minecraft:warped_planks"
+    group: nether_wood
+    base_price: 1.25
+  crimson_fungus:
+    item: "minecraft:crimson_fungus"
+    group: nether_wood
+    base_price: 4.0
+  warped_fungus:
+    item: "minecraft:warped_fungus"
+    group: nether_wood
+    base_price: 4.0
+  shroomlight:
+    item: "minecraft:shroomlight"
+    group: nether_wood
+    base_price: 20.0
+  warped_wart_block:
+    item: "minecraft:warped_wart_block"
+    group: nether_wood
+    base_price: 18.0
+
+  # --- Bamboo ---
+  bamboo:
+    item: "minecraft:bamboo"
+    group: bamboo
+    base_price: 1.5
+  bamboo_block:
+    item: "minecraft:bamboo_block"
+    group: bamboo
+    base_price: 14.0      # 9x bamboo
+  bamboo_planks:
+    item: "minecraft:bamboo_planks"
+    group: bamboo
+    base_price: 1.5
+
+  # --- Fish ---
+  cod:
+    item: "minecraft:cod"
+    group: fish
+    base_price: 5.0
+  cooked_cod:
+    item: "minecraft:cooked_cod"
+    group: fish
+    base_price: 7.0
+  salmon:
+    item: "minecraft:salmon"
+    group: fish
+    base_price: 6.0
+  cooked_salmon:
+    item: "minecraft:cooked_salmon"
+    group: fish
+    base_price: 8.0
+  tropical_fish:
+    item: "minecraft:tropical_fish"
+    group: fish
+    base_price: 15.0
+  pufferfish:
+    item: "minecraft:pufferfish"
+    group: fish
+    base_price: 20.0
+  ink_sac:
+    item: "minecraft:ink_sac"
+    group: fish
+    base_price: 4.0
+  glow_ink_sac:
+    item: "minecraft:glow_ink_sac"
+    group: fish
+    base_price: 12.0
+  fishing_rod:
+    item: "minecraft:fishing_rod"
+    group: fish
+    base_price: 12.0      # 3 sticks + 2 string
+
+  # --- Kelp & Sea Life ---
+  kelp:
+    item: "minecraft:kelp"
+    group: sea
+    base_price: 2.0
+  dried_kelp:
+    item: "minecraft:dried_kelp"
+    group: sea
+    base_price: 2.5
+  dried_kelp_block:
+    item: "minecraft:dried_kelp_block"
+    group: sea
+    base_price: 24.0      # 9x dried kelp
+  seagrass:
+    item: "minecraft:seagrass"
+    group: sea
+    base_price: 2.0
+  sea_pickle:
+    item: "minecraft:sea_pickle"
+    group: sea
+    base_price: 8.0
+  sponge:
+    item: "minecraft:sponge"
+    group: sea
+    base_price: 60.0
+  wet_sponge:
+    item: "minecraft:wet_sponge"
+    group: sea
+    base_price: 55.0
+
+  # --- Prismarine ---
+  prismarine_shard:
+    item: "minecraft:prismarine_shard"
+    group: prismarine
+    base_price: 15.0
+  prismarine_crystals:
+    item: "minecraft:prismarine_crystals"
+    group: prismarine
+    base_price: 20.0
+  prismarine:
+    item: "minecraft:prismarine"
+    group: prismarine
+    base_price: 62.0      # 4 shards
+  prismarine_bricks:
+    item: "minecraft:prismarine_bricks"
+    group: prismarine
+    base_price: 140.0     # 9 shards
+  dark_prismarine:
+    item: "minecraft:dark_prismarine"
+    group: prismarine
+    base_price: 130.0     # 8 shards + black dye
+  sea_lantern:
+    item: "minecraft:sea_lantern"
+    group: prismarine
+    base_price: 170.0     # 4 shards + 5 crystals
+
+  # --- Coral ---
+  tube_coral_block:
+    item: "minecraft:tube_coral_block"
+    group: coral
+    base_price: 15.0
+  brain_coral_block:
+    item: "minecraft:brain_coral_block"
+    group: coral
+    base_price: 15.0
+  bubble_coral_block:
+    item: "minecraft:bubble_coral_block"
+    group: coral
+    base_price: 15.0
+  fire_coral_block:
+    item: "minecraft:fire_coral_block"
+    group: coral
+    base_price: 15.0
+  horn_coral_block:
+    item: "minecraft:horn_coral_block"
+    group: coral
+    base_price: 15.0
