@@ -212,9 +212,14 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     private void snapshot() {
         List<MarketState> items = market.allState();   // detached copy on the main thread
         long ts = System.currentTimeMillis();
+        int retentionDays = config.historyRetentionDays();
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
             try {
                 database.snapshot(items, ts);
+                if (retentionDays > 0) {
+                    // Prune with the write so history stays bounded instead of growing forever.
+                    database.pruneHistory(ts - (long) retentionDays * 24L * 60L * 60L * 1000L);
+                }
             } catch (Exception e) {
                 getLogger().log(Level.WARNING, "History snapshot failed", e);
             }

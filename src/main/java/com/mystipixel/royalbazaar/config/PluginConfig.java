@@ -48,6 +48,11 @@ public final class PluginConfig {
         return Math.max(20L, plugin.getConfig().getLong("engine.flush-interval-seconds", 30L) * 20L);
     }
 
+    /** Days of price history to keep. 0 or less disables pruning (keep everything). */
+    public int historyRetentionDays() {
+        return plugin.getConfig().getInt("engine.history-retention-days", 30);
+    }
+
     public double emaAlpha() {
         return plugin.getConfig().getDouble("engine.trend-ema-alpha", 0.2);
     }

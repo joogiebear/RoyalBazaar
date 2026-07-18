@@ -168,6 +168,19 @@ public final class BazaarDatabase {
     }
 
     /** Append a price snapshot for the graph / 24h stats. */
+    /**
+     * Delete price history older than {@code cutoff}. Without this rb_history only ever grows — one
+     * row per item per snapshot, so a few hundred items reach millions of rows a year and every write
+     * slows down. Served by the (item_id, ts) key. Returns how many rows went.
+     */
+    public int pruneHistory(long cutoff) throws SQLException {
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement("DELETE FROM rb_history WHERE ts < ?")) {
+            ps.setLong(1, cutoff);
+            return ps.executeUpdate();
+        }
+    }
+
     public void snapshot(Collection<MarketState> items, long ts) throws SQLException {
         String sql = "INSERT INTO rb_history (item_id, ts, mid_price) VALUES (?,?,?)";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {

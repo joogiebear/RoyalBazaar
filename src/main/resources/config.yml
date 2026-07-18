@@ -13,6 +13,10 @@ engine:
   history-interval-seconds: 300
   # How often dirty prices are flushed to disk (write-behind). Seconds.
   flush-interval-seconds: 30
+  # How long price history is kept, in days. Older snapshots are deleted after each new one.
+  # History only ever grows otherwise: one row per item per snapshot adds up to millions of
+  # rows a year, which bloats the database and slows every write. 0 = keep everything.
+  history-retention-days: 30
   # Smoothing for the trend arrow (0..1). Lower = smoother, slower to flip.
   trend-ema-alpha: 0.2
 
