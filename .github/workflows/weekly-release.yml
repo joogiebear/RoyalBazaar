@@ -47,11 +47,6 @@ jobs:
     needs: gate
     if: needs.gate.outputs.proceed == 'true'
     runs-on: ubuntu-latest
-    env:
-      MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
-      MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
-      MODRINTH_LOADERS: ${{ vars.MODRINTH_LOADERS || 'paper' }}
-      GAME_VERSION_PREFIX: ${{ vars.MODRINTH_GAME_VERSION_PREFIX || '1.21' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -143,6 +138,3 @@ jobs:
             --title "${{ steps.prep.outputs.version }}" \
             --notes-file RELEASE_NOTES.md
 
-      - name: Publish to Modrinth
-        if: steps.prep.outputs.release == 'true'
-        run: bash .github/release/modrinth.sh "${{ steps.jar.outputs.path }}" "${{ steps.prep.outputs.version }}"
