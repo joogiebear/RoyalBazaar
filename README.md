@@ -284,9 +284,10 @@ content:
 `rbazaar_buy` / `rbazaar_sell` take an `amount:` arg — a number, `all`, or `fill` (buy as many as
 fit in the inventory, capped by what the player can afford).
 
-`rbazaar_sell_all` takes a `scope:` arg — `category` follows wherever the button was clicked
-(a category sells its own items, a group narrows to that group), and `all` covers everything the
-bazaar trades.
+`rbazaar_sell_all` scopes itself to how deep the player has navigated. Anywhere above a group it
+sells everything the bazaar trades, because a player standing in the bazaar wants one button that
+empties their bags; inside a group it narrows to that group's items. A `scope: all` arg forces the
+wide behaviour even inside a group.
 
 `rbazaar_back` works the parent out from the open menu rather than naming a target, so the same
 button behaves correctly however the player arrived.

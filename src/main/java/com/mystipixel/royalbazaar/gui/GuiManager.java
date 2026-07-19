@@ -40,6 +40,13 @@ public final class GuiManager {
 
     private final Map<UUID, OpenView> views = new HashMap<>();
 
+    /**
+     * Players currently being re-rendered by {@link #refresh(Player)}. A refresh reuses the open path,
+     * but a re-render is not an opening — without this, every trade replays the menu's open sound on
+     * top of the button's own click sound.
+     */
+    private final Set<UUID> refreshing = new HashSet<>();
+
     public GuiManager(MenuManager menus, MarketManager market, BazaarService service, EcoHook eco) {
         this.menus = menus;
         this.market = market;
@@ -148,10 +155,10 @@ public final class GuiManager {
         views.put(player.getUniqueId(), view);
     }
 
-    /** Play a menu's configured open sound, if it defines one. */
+    /** Play a menu's configured open sound, if it defines one and this is a real open. */
     private void playOpen(Player player, MenuTemplate tmpl) {
         MenuTemplate.SoundSpec spec = tmpl == null ? null : tmpl.sound("open");
-        if (spec == null) {
+        if (spec == null || refreshing.contains(player.getUniqueId())) {
             return;
         }
         try {
@@ -243,13 +250,18 @@ public final class GuiManager {
         if (v == null) {
             return;
         }
-        switch (v.menuId()) {
-            case "bazaar_category" -> openCategory(player, v.categoryId(), v.page());
-            case "bazaar_group" -> openGroup(player, v.categoryId(), v.groupId(), v.page());
-            case "bazaar_product" -> openProduct(player, v.itemId());
-            case "bazaar_buy" -> openBuy(player, v.itemId());
-            case "bazaar_search" -> openSearch(player, v.query(), v.page());
-            default -> openDefault(player);
+        refreshing.add(player.getUniqueId());
+        try {
+            switch (v.menuId()) {
+                case "bazaar_category" -> openCategory(player, v.categoryId(), v.page());
+                case "bazaar_group" -> openGroup(player, v.categoryId(), v.groupId(), v.page());
+                case "bazaar_product" -> openProduct(player, v.itemId());
+                case "bazaar_buy" -> openBuy(player, v.itemId());
+                case "bazaar_search" -> openSearch(player, v.query(), v.page());
+                default -> openDefault(player);
+            }
+        } finally {
+            refreshing.remove(player.getUniqueId());
         }
     }
 

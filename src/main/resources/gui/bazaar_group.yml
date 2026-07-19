@@ -39,8 +39,11 @@ category-rail:
 #         column: 3
 #   Pinned entries hold their square on the first page; everything else fills in around them.
 
-# Menu-level sounds. Per-button feedback still uses play_sound in a click list;
-# this covers what a button can't express, like opening the menu.
+# Menu-level sounds. This plays when the menu opens — including when a button elsewhere opens it.
+# So a button that navigates (back, open_menu, open_buy, open_product) must NOT also add play_sound:
+# the destination menu already speaks for the click, and two sounds fire as one doubled click.
+# Buttons that only re-render the current menu (buy, sell, sell all) DO need their own play_sound,
+# because a refresh deliberately does not replay this sound.
 sounds:
   open:
     enabled: true
@@ -88,9 +91,11 @@ slots:
     column: 3
     left-click:
       - id: rbazaar_sell_all
+      - id: play_sound
         args:
-          scope: category
-
+          sound: ui_button_click
+          pitch: 1
+          volume: 1
   - item: oak_sign name:"&bSearch"
     lore:
       - "&7Search the bazaar for an item"
@@ -110,11 +115,6 @@ slots:
     column: 4
     left-click:
       - id: rbazaar_back
-      - id: play_sound
-        args:
-          sound: ui_button_click
-          pitch: 1
-          volume: 1
 
   - item: barrier name:"&cClose"
     lore: []

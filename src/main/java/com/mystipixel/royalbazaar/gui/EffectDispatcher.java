@@ -137,9 +137,12 @@ public final class EffectDispatcher {
     /**
      * Sell everything in the player's inventory that the current view covers.
      *
-     * <p>Scope follows where the button was clicked, which is what makes one button feel right in more
-     * than one place: a category sells only its own items and a group narrows further to that group. An
-     * explicit {@code scope: all} in the config always means everything the bazaar trades.
+     * <p>Scope follows how deep the player has navigated, not which category they happen to be browsing.
+     * Anywhere above a group — including inside a category — the button sells the whole inventory, because
+     * a player standing in the bazaar wants one button that empties their bags. Only once they open a
+     * specific group does it narrow to that group, where the intent is clearly "sell just these".
+     *
+     * <p>{@code scope: all} in the config forces the wide behaviour even inside a group.
      */
     private void sellAll(Player player, String scope) {
         OpenView view = gui.viewOf(player);
@@ -148,15 +151,12 @@ public final class EffectDispatcher {
 
         Collection<MarketItem> items;
         String what;
-        if ("all".equalsIgnoreCase(scope) || categoryId == null) {
-            items = market.all();
-            what = "your inventory";
-        } else if (groupId != null) {
+        if (groupId != null && categoryId != null && !"all".equalsIgnoreCase(scope)) {
             items = market.itemsInGroup(categoryId, groupId);
             what = "this group";
         } else {
-            items = market.itemsIn(categoryId);
-            what = "this category";
+            items = market.all();
+            what = "your inventory";
         }
 
         BazaarService.SellAllResult result = service.sellAll(player, items);
