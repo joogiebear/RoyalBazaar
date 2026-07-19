@@ -39,6 +39,15 @@ category-rail:
 #         column: 3
 #   Pinned entries hold their square on the first page; everything else fills in around them.
 
+# Menu-level sounds. Per-button feedback still uses play_sound in a click list;
+# this covers what a button can't express, like opening the menu.
+sounds:
+  open:
+    enabled: true
+    name: UI_BUTTON_CLICK
+    volume: 0.7
+    pitch: 1.2
+
 pages:
   - page: 1
     mask:

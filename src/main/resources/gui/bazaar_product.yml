@@ -10,6 +10,15 @@ title: "%rbazaar_category_id% &7» &f%rbazaar_item_display%"
 command: []
 rows: 4
 
+# Menu-level sounds. Per-button feedback still uses play_sound in a click list;
+# this covers what a button can't express, like opening the menu.
+sounds:
+  open:
+    enabled: true
+    name: UI_BUTTON_CLICK
+    volume: 0.7
+    pitch: 1.2
+
 pages:
   - page: 1
     mask:

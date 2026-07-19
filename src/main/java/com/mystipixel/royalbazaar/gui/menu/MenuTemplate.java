@@ -9,6 +9,8 @@ import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +24,10 @@ import java.util.Map;
  * converted to 0-based inventory indices here via {@code (row-1)*9 + (column-1)}.
  */
 public final class MenuTemplate {
+
+    /** One entry from a menu's {@code sounds:} block. */
+    public record SoundSpec(String name, float volume, float pitch) {
+    }
 
     /** The paging arrow config (item + resolved index). */
     public record Arrow(ItemSpec item, int index, boolean enabled) {
@@ -49,10 +55,11 @@ public final class MenuTemplate {
     private final Content content;               // null for static menus (main)
     private final Content groupContent;          // null unless the menu can render group icons
     private final Rail rail;                     // null when the menu shows no category rail
+    private final Map<String, SoundSpec> sounds;
 
     private MenuTemplate(String title, int rows, ItemStack maskFiller, List<Integer> contentSlots,
                          List<MenuSlot> slots, Arrow forwards, Arrow backwards, Content content,
-                         Content groupContent, Rail rail) {
+                         Content groupContent, Rail rail, Map<String, SoundSpec> sounds) {
         this.title = title;
         this.rows = rows;
         this.maskFiller = maskFiller;
@@ -63,6 +70,7 @@ public final class MenuTemplate {
         this.content = content;
         this.groupContent = groupContent;
         this.rail = rail;
+        this.sounds = sounds;
     }
 
     // ------------------------------------------------------------------ loading
@@ -117,7 +125,7 @@ public final class MenuTemplate {
         Rail rail = parseRail(cfg.getConfigurationSection("category-rail"), size);
 
         return new MenuTemplate(title, rows, filler, contentSlots, slots, forwards, backwards,
-                content, groupContent, rail);
+                content, groupContent, rail, parseSounds(cfg));
     }
 
     /**
@@ -267,6 +275,41 @@ public final class MenuTemplate {
     }
 
     // ------------------------------------------------------------------ rendering
+
+    /**
+     * Read the {@code sounds:} block, in the same shape the rest of the suite uses
+     * ({@code name}/{@code enabled}/{@code volume}/{@code pitch}).
+     *
+     * <p>Per-button {@code play_sound} effects still work and are the way to give one action its own
+     * feedback; this covers the menu-level ones a button can't express, like opening.
+     */
+    private static Map<String, SoundSpec> parseSounds(FileConfiguration cfg) {
+        ConfigurationSection section = cfg.getConfigurationSection("sounds");
+        if (section == null) {
+            return Map.of();
+        }
+        Map<String, SoundSpec> out = new LinkedHashMap<>();
+        for (String key : section.getKeys(false)) {
+            ConfigurationSection entry = section.getConfigurationSection(key);
+            if (entry == null || !entry.getBoolean("enabled", true)) {
+                continue;
+            }
+            String name = entry.getString("name", entry.getString("sound", ""));
+            if (name.isBlank()) {
+                continue;
+            }
+            out.put(key.toLowerCase(Locale.ROOT), new SoundSpec(
+                    name.trim().toLowerCase(Locale.ROOT).replace('_', '.'),
+                    (float) entry.getDouble("volume", 0.7),
+                    (float) entry.getDouble("pitch", 1.2)));
+        }
+        return Map.copyOf(out);
+    }
+
+    /** A configured sound by key, or null when the menu doesn't define one. */
+    public SoundSpec sound(String key) {
+        return sounds.get(key);
+    }
 
     /** The category rail, or null when this menu doesn't show one. */
     public Rail rail() {

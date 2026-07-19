@@ -117,6 +117,7 @@ public final class GuiManager {
         paginateItems(tmpl, inv, view, player, hits);
 
         player.openInventory(inv);
+        playOpen(player, tmpl);
         views.put(player.getUniqueId(), view);
     }
 
@@ -143,7 +144,21 @@ public final class GuiManager {
         }
 
         player.openInventory(inv);
+        playOpen(player, tmpl);
         views.put(player.getUniqueId(), view);
+    }
+
+    /** Play a menu's configured open sound, if it defines one. */
+    private void playOpen(Player player, MenuTemplate tmpl) {
+        MenuTemplate.SoundSpec spec = tmpl == null ? null : tmpl.sound("open");
+        if (spec == null) {
+            return;
+        }
+        try {
+            player.playSound(player.getLocation(), spec.name(), spec.volume(), spec.pitch());
+        } catch (Throwable ignored) {
+            // bad sound key — never let it stop a menu opening
+        }
     }
 
     /** One group's products: category → group → here. */
@@ -172,6 +187,7 @@ public final class GuiManager {
         paginateItems(tmpl, inv, view, player, items);
 
         player.openInventory(inv);
+        playOpen(player, tmpl);
         views.put(player.getUniqueId(), view);
     }
 
@@ -199,6 +215,7 @@ public final class GuiManager {
         placeFixedSlots(tmpl, inv, view, ph);
 
         player.openInventory(inv);
+        playOpen(player, tmpl);
         views.put(player.getUniqueId(), view);
     }
 
@@ -216,6 +233,7 @@ public final class GuiManager {
         placeFixedSlots(tmpl, inv, view, ph);
 
         player.openInventory(inv);
+        playOpen(player, tmpl);
         views.put(player.getUniqueId(), view);
     }
 
