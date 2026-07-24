@@ -97,117 +97,157 @@ items:
     item: "minecraft:wheat"
     group: wheat_seeds
     base_price: 3.0
-    elasticity: 120000    # staple crop — very stable
+    floor_pct: 0.25
+    elasticity: 20000    # regen-zone crop — responds within a farming session
   wheat_seeds:
     item: "minecraft:wheat_seeds"
     group: wheat_seeds
     base_price: 1.5
+    elasticity: 20000
+    floor_pct: 0.25
   hay_block:
     item: "minecraft:hay_block"
     group: wheat_seeds
     base_price: 27.0      # 9x wheat
+    elasticity: 20000
   bread:
     item: "minecraft:bread"
     group: wheat_seeds
     base_price: 10.0      # 3 wheat = 9
+    elasticity: 20000
 
   # --- Carrot ---
   carrot:
     item: "minecraft:carrot"
     group: carrot
     base_price: 3.0
+    elasticity: 20000
+    floor_pct: 0.25
   golden_carrot:
     item: "minecraft:golden_carrot"
     group: carrot
     base_price: 22.0      # 8 gold nuggets (17.8) + carrot
+    elasticity: 20000
 
   # --- Potato ---
   potato:
     item: "minecraft:potato"
     group: potato
     base_price: 3.0
+    elasticity: 20000
+    floor_pct: 0.25
   baked_potato:
     item: "minecraft:baked_potato"
     group: potato
     base_price: 4.0
+    elasticity: 20000
 
   # --- Beetroot ---
   beetroot:
     item: "minecraft:beetroot"
     group: beetroot
     base_price: 3.0
+    elasticity: 20000
+    floor_pct: 0.25
   beetroot_seeds:
     item: "minecraft:beetroot_seeds"
     group: beetroot
     base_price: 1.5
+    elasticity: 20000
+    floor_pct: 0.25
 
   # --- Pumpkin & Melon ---
   pumpkin:
     item: "minecraft:pumpkin"
     group: pumpkin_melon
     base_price: 6.0
+    elasticity: 20000
+    floor_pct: 0.25
   pumpkin_seeds:
     item: "minecraft:pumpkin_seeds"
     group: pumpkin_melon
     base_price: 2.0
+    elasticity: 20000
+    floor_pct: 0.25
   pumpkin_pie:
     item: "minecraft:pumpkin_pie"
     group: pumpkin_melon
     base_price: 13.0      # pumpkin + sugar + egg
+    elasticity: 20000
   melon:
     item: "minecraft:melon"
     group: pumpkin_melon
     base_price: 18.0      # 9 slices
+    elasticity: 20000
+    floor_pct: 0.25
   melon_slice:
     item: "minecraft:melon_slice"
     group: pumpkin_melon
     base_price: 2.0
+    elasticity: 20000
+    floor_pct: 0.25
   melon_seeds:
     item: "minecraft:melon_seeds"
     group: pumpkin_melon
     base_price: 2.0
+    elasticity: 20000
+    floor_pct: 0.25
   glistering_melon_slice:
     item: "minecraft:glistering_melon_slice"
     group: pumpkin_melon
     base_price: 21.0      # 8 gold nuggets + slice
+    elasticity: 20000
 
   # --- Mushrooms ---
   brown_mushroom:
     item: "minecraft:brown_mushroom"
     group: mushrooms
     base_price: 4.0
+    elasticity: 20000
+    floor_pct: 0.25
   red_mushroom:
     item: "minecraft:red_mushroom"
     group: mushrooms
     base_price: 4.0
+    elasticity: 20000
+    floor_pct: 0.25
   mushroom_stew:
     item: "minecraft:mushroom_stew"
     group: mushrooms
     base_price: 13.0      # 2 mushrooms + bowl
+    elasticity: 20000
 
   # --- Cocoa & Cactus ---
   cocoa_beans:
     item: "minecraft:cocoa_beans"
     group: cocoa_cactus
     base_price: 4.0
+    elasticity: 20000
+    floor_pct: 0.25
   cookie:
     item: "minecraft:cookie"
     group: cocoa_cactus
     base_price: 1.5       # 2 wheat + cocoa yields 8
+    elasticity: 20000
   cactus:
     item: "minecraft:cactus"
     group: cocoa_cactus
     base_price: 4.0
+    elasticity: 20000
+    floor_pct: 0.25
 
   # --- Sugar Cane & Paper ---
   sugar_cane:
     item: "minecraft:sugar_cane"
     group: sugar_cane
     base_price: 4.0
+    elasticity: 20000
+    floor_pct: 0.25
   sugar:
     item: "minecraft:sugar"
     group: sugar_cane
     base_price: 3.0       # below cane — 1 cane yields 1 sugar
+    elasticity: 20000
   paper:
     item: "minecraft:paper"
     group: sugar_cane
@@ -236,10 +276,14 @@ items:
     item: "minecraft:sweet_berries"
     group: fruit
     base_price: 3.0
+    elasticity: 20000
+    floor_pct: 0.25
   glow_berries:
     item: "minecraft:glow_berries"
     group: fruit
     base_price: 5.0
+    elasticity: 20000
+    floor_pct: 0.25
 
   # --- Leather & Beef ---
   leather:
@@ -324,10 +368,13 @@ items:
     item: "minecraft:nether_wart"
     group: nether_wart
     base_price: 8.0
+    elasticity: 20000
+    floor_pct: 0.25
   nether_wart_block:
     item: "minecraft:nether_wart_block"
     group: nether_wart
     base_price: 72.0      # 9x nether wart
+    elasticity: 20000
 
   # --- Bees & Honey ---
   honeycomb:
@@ -432,3 +479,7 @@ items:
     item: "minecraft:black_dye"
     group: dyes
     base_price: 2.0
+  poisonous_potato:
+    item: "minecraft:poisonous_potato"
+    group: potato
+    base_price: 1.5

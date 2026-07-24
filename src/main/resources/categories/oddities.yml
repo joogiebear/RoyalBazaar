@@ -95,10 +95,6 @@ items:
     elasticity: 5000
 
   # --- The End ---
-  end_stone:
-    item: "minecraft:end_stone"
-    group: end
-    base_price: 6.0
   end_stone_bricks:
     item: "minecraft:end_stone_bricks"
     group: end

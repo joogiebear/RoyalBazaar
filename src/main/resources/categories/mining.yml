@@ -61,18 +61,50 @@ groups:
     name: "&bDiamond"
     icon: "minecraft:diamond"
     order: 11
+  obsidian:
+    name: "&5Obsidian"
+    icon: "minecraft:obsidian"
+    order: 12
+  end_stone:
+    name: "&eEnd Stone"
+    icon: "minecraft:end_stone"
+    order: 13
+  glowstone:
+    name: "&eGlowstone"
+    icon: "minecraft:glowstone"
+    order: 14
+  netherrack:
+    name: "&cNetherrack"
+    icon: "minecraft:netherrack"
+    order: 15
+  mycelium:
+    name: "&dMycelium"
+    icon: "minecraft:mycelium"
+    order: 16
+  red_sand:
+    name: "&6Red Sand"
+    icon: "minecraft:red_sand"
+    order: 17
+  ice:
+    name: "&bIce"
+    icon: "minecraft:ice"
+    order: 18
+  snow:
+    name: "&fSnow"
+    icon: "minecraft:snow_block"
+    order: 19
   earth:
     name: "&6Dirt, Sand & Gravel"
     icon: "minecraft:sand"
-    order: 12
+    order: 20
   glass:
     name: "&bGlass"
     icon: "minecraft:glass"
-    order: 13
+    order: 21
   redstone_gear:
     name: "&cRedstone Components"
     icon: "minecraft:repeater"
-    order: 14
+    order: 22
 
 items:
   # --- Stone & Cobblestone ---
@@ -111,11 +143,11 @@ items:
     base_price: 2.0
   obsidian:
     item: "minecraft:obsidian"
-    group: stone
+    group: obsidian
     base_price: 40.0
   crying_obsidian:
     item: "minecraft:crying_obsidian"
-    group: stone
+    group: obsidian
     base_price: 80.0
 
   # --- Deepslate ---
@@ -268,11 +300,11 @@ items:
     base_price: 14.0
   glowstone_dust:
     item: "minecraft:glowstone_dust"
-    group: redstone
+    group: glowstone
     base_price: 6.0
   glowstone:
     item: "minecraft:glowstone"
-    group: redstone
+    group: glowstone
     base_price: 26.0      # 4 dust
 
   # --- Lapis Lazuli ---
@@ -349,7 +381,7 @@ items:
     base_price: 3.0
   mycelium:
     item: "minecraft:mycelium"
-    group: earth
+    group: mycelium
     base_price: 8.0
   sand:
     item: "minecraft:sand"
@@ -357,7 +389,7 @@ items:
     base_price: 2.0
   red_sand:
     item: "minecraft:red_sand"
-    group: earth
+    group: red_sand
     base_price: 2.0
   sandstone:
     item: "minecraft:sandstone"
@@ -393,7 +425,7 @@ items:
     base_price: 4.0
   netherrack:
     item: "minecraft:netherrack"
-    group: earth
+    group: netherrack
     base_price: 1.0
   basalt:
     item: "minecraft:basalt"
@@ -483,3 +515,26 @@ items:
     item: "minecraft:powered_rail"
     group: redstone_gear
     base_price: 23.0      # 6 gold + stick + redstone yields 6
+  # --- End Stone ---
+  end_stone:
+    item: "minecraft:end_stone"
+    group: end_stone
+    base_price: 3.0
+  # --- Ice ---
+  ice:
+    item: "minecraft:ice"
+    group: ice
+    base_price: 3.0
+  packed_ice:
+    item: "minecraft:packed_ice"
+    group: ice
+    base_price: 27.0
+  # --- Snow ---
+  snowball:
+    item: "minecraft:snowball"
+    group: snow
+    base_price: 0.5
+  snow_block:
+    item: "minecraft:snow_block"
+    group: snow
+    base_price: 2.0
