@@ -5,7 +5,7 @@
 
     <groupId>com.mystipixel</groupId>
     <artifactId>royalbazaar</artifactId>
-    <version>2026.29.2</version>
+    <version>2026.32.0</version>
     <packaging>jar</packaging>
 
     <name>RoyalBazaar</name>
