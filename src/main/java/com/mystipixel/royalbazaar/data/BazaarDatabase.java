@@ -117,8 +117,28 @@ public final class BazaarDatabase {
                     + "quantity INT NOT NULL,"
                     + "unit_mid DOUBLE PRECISION NOT NULL,"
                     + "total DOUBLE PRECISION NOT NULL)");
-            st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_rb_tx_player ON rb_transactions (player, ts)");
-            st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_rb_tx_item ON rb_transactions (item_id, ts)");
+            createIndexIfMissing(c, "idx_rb_tx_player", "rb_transactions", "player, ts");
+            createIndexIfMissing(c, "idx_rb_tx_item", "rb_transactions", "item_id, ts");
+        }
+    }
+
+    /**
+     * Creates an index unless the table already carries one by that name. MySQL has no
+     * {@code CREATE INDEX IF NOT EXISTS} — SQLite and MariaDB both do, which is why this went
+     * unnoticed — so the existence check belongs here rather than in the DDL. Asking the catalog
+     * rather than declaring the index inline also retrofits a table created before it existed.
+     */
+    private void createIndexIfMissing(Connection c, String name, String table, String columns)
+            throws SQLException {
+        try (ResultSet rs = c.getMetaData().getIndexInfo(null, null, table, false, true)) {
+            while (rs.next()) {
+                if (name.equalsIgnoreCase(rs.getString("INDEX_NAME"))) {
+                    return;
+                }
+            }
+        }
+        try (Statement s = c.createStatement()) {
+            s.executeUpdate("CREATE INDEX " + name + " ON " + table + " (" + columns + ")");
         }
     }
 
