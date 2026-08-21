@@ -1,3 +1,11 @@
+## 2026.34.0 — 2026-08-21
+
+### ✨ Features
+- deploy combat/woods/oddities + Hypixel regroup mining/farming (`a810bdc`)
+
+### 🐛 Fixes
+- create indexes without IF NOT EXISTS on MySQL (`dd571c1`)
+
 ## 2026.32.0 — 2026-08-07
 
 ### ✨ Features
