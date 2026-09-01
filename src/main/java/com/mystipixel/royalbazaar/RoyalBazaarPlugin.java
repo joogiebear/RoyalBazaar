@@ -123,7 +123,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages, market, signInput);
         getServer().getPluginManager().registerEvents(new BazaarGuiListener(gui, dispatcher), this);
 
-        BazaarCommand command = new BazaarCommand(this, gui, market);
+        BazaarCommand command = new BazaarCommand(this, gui, market, service);
         if (getCommand("bazaar") != null) {
             getCommand("bazaar").setExecutor(command);
             getCommand("bazaar").setTabCompleter(command);

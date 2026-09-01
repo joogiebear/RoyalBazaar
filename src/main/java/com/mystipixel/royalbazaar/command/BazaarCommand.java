@@ -1,10 +1,12 @@
 package com.mystipixel.royalbazaar.command;
 
 import com.mystipixel.royalbazaar.RoyalBazaarPlugin;
+import com.mystipixel.royalbazaar.config.CategoryConfig;
 import com.mystipixel.royalbazaar.gui.GuiManager;
 import com.mystipixel.royalbazaar.market.MarketItem;
 import com.mystipixel.royalbazaar.market.MarketManager;
 import com.mystipixel.royalbazaar.market.PricingEngine;
+import com.mystipixel.royalbazaar.service.BazaarService;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -12,19 +14,22 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
-/** {@code /bazaar} — open the bazaar, reload config, or inspect an item's live price. */
+/** {@code /bazaar} — open the bazaar, sell your inventory, reload config, or inspect prices. */
 public final class BazaarCommand implements CommandExecutor, TabCompleter {
 
     private final RoyalBazaarPlugin plugin;
     private final GuiManager gui;
     private final MarketManager market;
+    private final BazaarService service;
 
-    public BazaarCommand(RoyalBazaarPlugin plugin, GuiManager gui, MarketManager market) {
+    public BazaarCommand(RoyalBazaarPlugin plugin, GuiManager gui, MarketManager market, BazaarService service) {
         this.plugin = plugin;
         this.gui = gui;
         this.market = market;
+        this.service = service;
     }
 
     @Override
@@ -65,6 +70,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
                                 "sell", fmt(PricingEngine.sellPrice(item)),
                                 "mid", fmt(item.mid())));
             }
+            case "sellall" -> sellAll(sender, args);
             case "admin" -> admin(sender, args);
             default -> {
                 if (sender instanceof Player player) {
@@ -73,6 +79,46 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             }
         }
         return true;
+    }
+
+    /**
+     * {@code /bazaar sellall [category]} — the menu's Sell All button as a command, so emptying a
+     * full inventory after a mining trip doesn't require opening a menu first. Every item still goes
+     * through the normal sell path: price impact, the audit record and any EconGuard veto all apply.
+     */
+    private void sellAll(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            plugin.messages().send(sender, "players-only", "Only players can sell to the bazaar.");
+            return;
+        }
+        Collection<MarketItem> scope;
+        String what;
+        if (args.length >= 2) {
+            CategoryConfig cat = market.category(args[1].toLowerCase());
+            if (cat == null) {
+                plugin.messages().send(sender, "unknown-category", "&cUnknown category: {category}",
+                        java.util.Map.of("category", args[1]));
+                return;
+            }
+            scope = market.itemsIn(cat.id());
+            what = cat.displayName();
+        } else {
+            scope = market.all();
+            what = "your inventory";
+        }
+        BazaarService.SellAllResult result = service.sellAll(player, scope);
+        if (result.soldNothing()) {
+            plugin.messages().send(player, "sell-all.nothing",
+                    "&eNothing in " + what + " could be sold here.");
+        } else {
+            plugin.messages().send(player, "sell-all.done",
+                    "&aSold &f" + result.units() + "&a from &f" + result.distinctItems()
+                            + "&a item type(s) for &6" + String.format("%,.2f", result.proceeds()) + "&a.");
+        }
+        if (result.blocked() > 0) {
+            plugin.messages().send(player, "sell-all.blocked",
+                    "&c" + result.blocked() + " item type(s) were blocked and not sold.");
+        }
     }
 
     /**
@@ -163,6 +209,15 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             }
             if ("price".startsWith(args[0].toLowerCase())) {
                 out.add("price");
+            }
+            if ("sellall".startsWith(args[0].toLowerCase())) {
+                out.add("sellall");
+            }
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("sellall")) {
+            for (CategoryConfig cat : market.categories()) {
+                if (cat.id().startsWith(args[1].toLowerCase())) {
+                    out.add(cat.id());
+                }
             }
         } else if (args.length == 2 && args[0].equalsIgnoreCase("price")) {
             for (MarketItem item : market.all()) {
