@@ -1,7 +1,7 @@
 name: RoyalBazaar
 version: ${version}
 main: com.mystipixel.royalbazaar.RoyalBazaarPlugin
-api-version: '1.21'
+api-version: '26.2'
 author: Mystipixel
 description: Hypixel-style Bazaar with algorithmic dynamic pricing and full eco-suite item compatibility.
 depend:
