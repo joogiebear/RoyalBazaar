@@ -25,6 +25,7 @@ public final class MenuManager {
         byId.put("bazaar_group", load("bazaar_group.yml", "&8Bazaar", 6));
         byId.put("bazaar_product", load("bazaar_product.yml", "&8Bazaar", 6));
         byId.put("bazaar_buy", load("bazaar_buy.yml", "&8Instant Buy", 3));
+        byId.put("bazaar_trends", load("bazaar_trends.yml", "&8Market Trends", 6));
     }
 
     private MenuTemplate load(String fileName, String defaultTitle, int defaultRows) {

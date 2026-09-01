@@ -62,6 +62,7 @@ public final class EffectDispatcher {
             case "rbazaar_buy_prompt" -> prompt.begin(player, e.argString("item", null), true);
             case "rbazaar_sell_prompt" -> prompt.begin(player, e.argString("item", null), false);
             case "rbazaar_sell_all" -> sellAll(player, e.argString("scope", "category"));
+            case "rbazaar_open_trends" -> gui.openTrends(player);
             case "rbazaar_search" -> beginSearch(player);
             case "rbazaar_back" -> goBack(player);
             case "rbazaar_open_buy" -> gui.openBuy(player, e.argString("item", itemOf(player)));
@@ -106,6 +107,7 @@ public final class EffectDispatcher {
             case "bazaar_main" -> gui.openDefault(player);
             case "bazaar_category" -> gui.openCategory(player, category, 1);
             case "bazaar_group" -> gui.openGroup(player, category, group, 1);
+            case "bazaar_trends" -> gui.openTrends(player);
             default -> gui.openDefault(player);
         }
     }

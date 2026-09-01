@@ -1,0 +1,97 @@
+# RoyalBazaar - market trends overview.
+# Three runs of live entries, top to bottom: today's biggest RISERS, biggest FALLERS, and the
+# MOST-TRADED items. The "0" slots are split into three equal runs in mask order, so reshaping the
+# rows below reshapes the sections - keep the run count divisible by three.
+# Items that didn't move (or didn't trade) leave their slots empty rather than padding the list.
+#
+# Click ids: rbazaar_open_product (bound automatically to each entry) · rbazaar_back · close_inventory
+
+title: "&8Bazaar &7» &fMarket Trends"
+command: []
+rows: 6
+
+sounds:
+  open:
+    enabled: true
+    name: UI_BUTTON_CLICK
+    volume: 0.7
+    pitch: 1.2
+
+# Same rail as the category menu, so trends is a sibling of the categories, not a dead end.
+category-rail:
+  enabled: true
+  column: 1
+  rows: [1, 2, 3, 4, 5]
+  glint-selected: true
+  lore:
+    - "&7Click to browse this category."
+
+pages:
+  - page: 1
+    mask:
+      items:
+        - black_stained_glass_pane
+      pattern:
+        - "111111111"
+        - "110000000"
+        - "110000000"
+        - "110000000"
+        - "111111111"
+        - "111111111"
+
+# One entry per listed item, whichever run it lands in. The lore leads with the numbers that put
+# it on this screen.
+content:
+  template:
+    item: "%rbazaar_item%"
+    name: "%rbazaar_item_display%"
+    lore:
+      - "&724h: %rbazaar_change_24h%   &77d: %rbazaar_change_7d%"
+      - "&7Traded (24h): &f%rbazaar_volume_24h%"
+      - ""
+      - "&7Buy:  &a$%rbazaar_buy_price%"
+      - "&7Sell: &e$%rbazaar_sell_price%"
+      - ""
+      - "&eLeft-click &7to open."
+    left-click:
+      - id: rbazaar_open_product
+        args:
+          item: "%rbazaar_item%"
+
+slots:
+  # ---- run headers ----
+  - item: lime_dye name:"&a▲ Top Risers"
+    lore:
+      - "&7Biggest price gains"
+      - "&7in the last 24 hours."
+    row: 2
+    column: 2
+
+  - item: red_dye name:"&c▼ Top Fallers"
+    lore:
+      - "&7Biggest price drops"
+      - "&7in the last 24 hours."
+    row: 3
+    column: 2
+
+  - item: gold_ingot name:"&6⇄ Most Traded"
+    lore:
+      - "&7Highest 24-hour"
+      - "&7trade volume."
+    row: 4
+    column: 2
+
+  # ---- nav ----
+  - item: arrow name:"&7« Back"
+    lore: []
+    row: 6
+    column: 4
+    left-click:
+      - id: rbazaar_back
+
+  - item: barrier name:"&cClose"
+    lore: []
+    row: 6
+    column: 6
+    left-click:
+      - id: close_inventory

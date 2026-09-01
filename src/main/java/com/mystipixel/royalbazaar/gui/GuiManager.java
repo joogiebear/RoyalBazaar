@@ -244,6 +244,81 @@ public final class GuiManager {
         views.put(player.getUniqueId(), view);
     }
 
+    /**
+     * The market overview: the day's biggest risers, biggest fallers and most-traded items, one row
+     * of each. Computed from live in-memory state at open time, so it costs no queries. The template's
+     * content slots are split into three equal runs in mask order — top run risers, middle fallers,
+     * bottom volume — so the layout is still entirely the config's to shape.
+     */
+    public void openTrends(Player player) {
+        MenuTemplate tmpl = menus.get("bazaar_trends");
+        if (tmpl == null) {
+            openDefault(player);                 // menu file missing — don't strand the player
+            return;
+        }
+        OpenView view = new OpenView("bazaar_trends", null, null);
+        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(tmpl.title()));
+        tmpl.applyFiller(inv);
+        placeFixedSlots(tmpl, inv, view, Map.of());
+        placeCategoryRail(tmpl, inv, view, null);
+
+        MenuTemplate.Content content = tmpl.content();
+        List<Integer> slots = tmpl.contentSlots();
+        if (content != null && slots.size() >= 3) {
+            int per = slots.size() / 3;
+            renderTrendRun(inv, view, player, content, slots.subList(0, per), byDayChange(false));
+            renderTrendRun(inv, view, player, content, slots.subList(per, 2 * per), byDayChange(true));
+            renderTrendRun(inv, view, player, content, slots.subList(2 * per, 3 * per), byVolume());
+        }
+
+        player.openInventory(inv);
+        playOpen(player, tmpl);
+        views.put(player.getUniqueId(), view);
+    }
+
+    private void renderTrendRun(Inventory inv, OpenView view, Player player, MenuTemplate.Content content,
+                                List<Integer> slots, List<MarketItem> items) {
+        for (int i = 0; i < slots.size() && i < items.size(); i++) {
+            MarketItem item = items.get(i);
+            Map<String, String> ph = service.placeholders(item, player);
+            inv.setItem(slots.get(i), content.template().build(eco, ph, content.lore()));
+            view.bind(slots.get(i), resolveEffects(content.leftClick(), ph),
+                    resolveEffects(content.rightClick(), ph));
+        }
+    }
+
+    /** Items that actually moved today, biggest move first. Flat items leave their slots empty. */
+    private List<MarketItem> byDayChange(boolean falling) {
+        List<MarketItem> out = new ArrayList<>();
+        for (MarketItem item : market.all()) {
+            double pct = dayChange(item);
+            if (falling ? pct < 0 : pct > 0) {
+                out.add(item);
+            }
+        }
+        out.sort((a, b) -> falling
+                ? Double.compare(dayChange(a), dayChange(b))
+                : Double.compare(dayChange(b), dayChange(a)));
+        return out;
+    }
+
+    private List<MarketItem> byVolume() {
+        List<MarketItem> out = new ArrayList<>();
+        for (MarketItem item : market.all()) {
+            if (item.volume().bought24h() + item.volume().sold24h() > 0) {
+                out.add(item);
+            }
+        }
+        out.sort((a, b) -> Long.compare(
+                b.volume().bought24h() + b.volume().sold24h(),
+                a.volume().bought24h() + a.volume().sold24h()));
+        return out;
+    }
+
+    private double dayChange(MarketItem item) {
+        return item.midYesterday() <= 0 ? 0.0 : (item.mid() - item.midYesterday()) / item.midYesterday();
+    }
+
     /** Re-render whatever the player currently has open (after a trade moves prices). */
     public void refresh(Player player) {
         OpenView v = views.get(player.getUniqueId());
@@ -258,6 +333,7 @@ public final class GuiManager {
                 case "bazaar_product" -> openProduct(player, v.itemId());
                 case "bazaar_buy" -> openBuy(player, v.itemId());
                 case "bazaar_search" -> openSearch(player, v.query(), v.page());
+                case "bazaar_trends" -> openTrends(player);
                 default -> openDefault(player);
             }
         } finally {

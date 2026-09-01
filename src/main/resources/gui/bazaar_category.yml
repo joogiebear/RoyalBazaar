@@ -143,3 +143,15 @@ slots:
     column: 5
     left-click:
       - id: close_inventory
+
+  - item: filled_map name:"&6Market Trends"
+    lore:
+      - "&7Today's biggest risers and"
+      - "&7fallers, and the most-traded"
+      - "&7items on the bazaar."
+      - ""
+      - "&eClick to view"
+    row: 6
+    column: 7
+    left-click:
+      - id: rbazaar_open_trends
