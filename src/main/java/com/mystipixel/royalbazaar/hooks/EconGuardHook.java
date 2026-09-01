@@ -15,41 +15,63 @@ import java.util.UUID;
  * when EconGuard is absent (or too old to expose the bridge) every call is a safe no-op.
  *
  * <p>The bazaar is the server's biggest faucet/sink, so every completed trade is reported to EconGuard
- * for its ledger and heuristics. EconGuard's current API is record-only, so {@link #allow} stays a
- * permissive seam for a future pre-trade veto; {@link #observe} does the reporting.
+ * for its ledger and heuristics, and every trade first passes {@link #allow} — EconGuard's
+ * {@code allowTrade} veto, which refuses flagged players when its
+ * {@code enforcement.block-flagged-trades} is on and permits everyone otherwise. On an EconGuard old
+ * enough to lack the veto bridge, {@link #allow} simply permits, as before.
  */
 public final class EconGuardHook {
 
     private static final String SOURCE_BAZAAR = "bazaar";
 
     private final Method bridge;
+    private final Method veto;
 
     public EconGuardHook() {
-        Method resolved = null;
+        Method resolvedRecord = null;
+        Method resolvedVeto = null;
         if (Bukkit.getPluginManager().isPluginEnabled("EconGuard")) {
             try {
                 Class<?> econGuard = Class.forName("com.mystipixel.econguard.api.EconGuard");
-                resolved = econGuard.getMethod("record",
+                resolvedRecord = econGuard.getMethod("record",
                         UUID.class, String.class, String.class, String.class,
                         double.class, boolean.class, double.class,
                         UUID.class, String.class, String.class, String.class);
+                try {
+                    resolvedVeto = econGuard.getMethod("allowTrade", UUID.class);
+                } catch (NoSuchMethodException oldEconGuard) {
+                    // Predates the veto bridge — reporting still works, allow() permits.
+                }
             } catch (Throwable ignored) {
                 // EconGuard missing or predates the bridge - stay a no-op.
             }
         }
-        this.bridge = resolved;
+        this.bridge = resolvedRecord;
+        this.veto = resolvedVeto;
     }
 
     public boolean isPresent() {
         return bridge != null;
     }
 
+    /** Whether the installed EconGuard exposes the pre-trade veto (its enforcement decides the rest). */
+    public boolean hasVeto() {
+        return veto != null;
+    }
+
     /**
-     * Pre-trade veto seam. EconGuard exposes no veto today, so this permits when present; kept so the
-     * call sites don't change if EconGuard later adds a pre-trade check.
+     * The pre-trade check. False only when EconGuard both flags this player and has enforcement
+     * switched on; any failure to answer permits — an audit core outage must not close the bazaar.
      */
     public boolean allow(Player player, TradeSide side, String itemId, long quantity, double total) {
-        return true;
+        if (veto == null) {
+            return true;
+        }
+        try {
+            return (boolean) veto.invoke(null, player.getUniqueId());
+        } catch (Throwable ignored) {
+            return true;
+        }
     }
 
     /**
