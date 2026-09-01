@@ -116,12 +116,12 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         this.menus = new MenuManager(this);
         this.gui = new GuiManager(menus, market, service, eco);
 
-        AmountPrompt prompt = new AmountPrompt(this, service, gui, messages);
         SignInput signInput = new SignInput(this);
         getServer().getPluginManager().registerEvents(signInput, this);
+        // Sign-backed, so it no longer listens to chat and needs no event registration of its own.
+        AmountPrompt prompt = new AmountPrompt(service, gui, messages, signInput);
         EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages, market, signInput);
         getServer().getPluginManager().registerEvents(new BazaarGuiListener(gui, dispatcher), this);
-        getServer().getPluginManager().registerEvents(prompt, this);
 
         BazaarCommand command = new BazaarCommand(this, gui, market);
         if (getCommand("bazaar") != null) {

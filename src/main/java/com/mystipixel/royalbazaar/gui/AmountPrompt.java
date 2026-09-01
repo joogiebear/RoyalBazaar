@@ -3,86 +3,71 @@ package com.mystipixel.royalbazaar.gui;
 import com.mystipixel.royalbazaar.market.TradeResult;
 import com.mystipixel.royalbazaar.message.MessageManager;
 import com.mystipixel.royalbazaar.service.BazaarService;
-import io.papermc.paper.event.player.AsyncChatEvent;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Handles the "custom amount" flow: close the menu, ask the player to type a number in chat, then run
- * the trade and reopen the product menu. Chat runs off-thread on Paper, so the actual trade is bounced
- * back to the main thread.
+ * The "custom amount" flow: ask for a number on a throwaway sign — the same input the search box and
+ * the instant-buy screen already use — then run the trade and reopen the product page.
+ *
+ * <p>This used to prompt in chat. A sign is better on every axis the suite cares about: the amount
+ * stays private instead of appearing in public chat, the player is never stranded staring at a chat
+ * box with no menu, and {@link SignInput}'s callback arrives on the main thread so the trade runs
+ * inline with no scheduling hop.
  */
-public final class AmountPrompt implements Listener {
+public final class AmountPrompt {
 
-    private record Pending(String itemId, boolean buy) {
-    }
-
-    private final JavaPlugin plugin;
     private final BazaarService service;
     private final GuiManager gui;
     private final MessageManager messages;
-    private final Map<UUID, Pending> pending = new ConcurrentHashMap<>();
+    private final SignInput signInput;
 
-    public AmountPrompt(JavaPlugin plugin, BazaarService service, GuiManager gui, MessageManager messages) {
-        this.plugin = plugin;
+    public AmountPrompt(BazaarService service, GuiManager gui, MessageManager messages, SignInput signInput) {
         this.service = service;
         this.gui = gui;
         this.messages = messages;
+        this.signInput = signInput;
     }
 
     public void begin(Player player, String itemId, boolean buy) {
         if (itemId == null) {
             return;
         }
-        pending.put(player.getUniqueId(), new Pending(itemId, buy));
-        player.closeInventory();
-        messages.send(player, "prompt-amount", "&eType an amount in chat &7(or 'cancel')&e.");
+        signInput.request(player,
+                List.of("&8^^^^^^^^^^^^^^^", buy ? "&8Amount to buy" : "&8Amount to sell", "&8(or 'cancel')"),
+                typed -> finish(player, itemId, buy, typed));
     }
 
-    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
-    public void onChat(AsyncChatEvent event) {
-        Player player = event.getPlayer();
-        Pending p = pending.remove(player.getUniqueId());
-        if (p == null) {
-            return;
-        }
-        event.setCancelled(true);
-        String raw = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
-        if (raw.equalsIgnoreCase("cancel")) {
-            messages.send(player, "cancelled", "&7Cancelled.");
-            plugin.getServer().getScheduler().runTask(plugin, () -> gui.openProduct(player, p.itemId()));
+    /** Runs on the main thread with what came off the sign (null when it could not be opened). */
+    private void finish(Player player, String itemId, boolean buy, String typed) {
+        if (typed == null || typed.isBlank() || typed.equalsIgnoreCase("cancel")) {
+            gui.openProduct(player, itemId);      // cancelled — back where they were
             return;
         }
         long amount;
         try {
-            amount = Long.parseLong(raw.replace(",", ""));
+            amount = Long.parseLong(typed.replace(",", "").trim());
         } catch (NumberFormatException e) {
             messages.send(player, "not-a-number", "&cNot a number.");
+            gui.openProduct(player, itemId);
             return;
         }
         if (amount <= 0) {
             messages.send(player, "amount-positive", "&cAmount must be positive.");
+            gui.openProduct(player, itemId);
             return;
         }
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            TradeResult r = p.buy() ? service.buy(player, p.itemId(), amount) : service.sell(player, p.itemId(), amount);
-            if (r.ok()) {
-                messages.send(player, "trade.done", "&aDone: &f{amount} &7for &e${total}",
-                        java.util.Map.of("amount", String.valueOf(r.filled()),
-                                "total", String.format("%,.2f", r.total())));
-            } else {
-                messages.send(player, "trade.failed", "&c{reason}",
-                        java.util.Map.of("reason", r.message() == null ? "Trade failed." : r.message()));
-            }
-            gui.openProduct(player, p.itemId());
-        });
+        TradeResult r = buy ? service.buy(player, itemId, amount) : service.sell(player, itemId, amount);
+        if (r.ok()) {
+            messages.send(player, "trade.done", "&aDone: &f{amount} &7for &e${total}",
+                    Map.of("amount", String.valueOf(r.filled()),
+                            "total", String.format("%,.2f", r.total())));
+        } else {
+            messages.send(player, "trade.failed", "&c{reason}",
+                    Map.of("reason", r.message() == null ? "Trade failed." : r.message()));
+        }
+        gui.openProduct(player, itemId);
     }
 }
