@@ -113,11 +113,15 @@ public final class MarketManager {
     /** Reversion + stat bookkeeping for every item. Main thread. */
     public void tick() {
         for (MarketItem item : byId.values()) {
-            double reverted = PricingEngine.revert(item);
-            if (reverted != item.mid()) {
-                item.setMid(reverted);
+            // A frozen item holds exactly where the admin put it: no reversion, no EMA drift.
+            // The volume ring still ticks so stale hours keep dropping off its 24h stats.
+            if (!item.frozen()) {
+                double reverted = PricingEngine.revert(item);
+                if (reverted != item.mid()) {
+                    item.setMid(reverted);
+                }
+                item.updateEma(emaAlpha);
             }
-            item.updateEma(emaAlpha);
             item.volume().tick();
         }
     }

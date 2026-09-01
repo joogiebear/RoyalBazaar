@@ -64,6 +64,10 @@ public final class BazaarService {
         if (amount <= 0) {
             return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId, "Invalid amount.");
         }
+        if (item.frozen()) {
+            return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.BUY, itemId,
+                    "This item is temporarily frozen.");
+        }
         // Items are handed over through int-sized stacks, so an order beyond int range would be paid
         // for in full but truncated in the (int) cast below. Clamp before pricing so the cost and the
         // delivery always describe the same quantity.
@@ -135,8 +139,9 @@ public final class BazaarService {
                 distinct++;
                 units += result.filled();
                 proceeds += result.total();
-            } else if (result.status() == TradeResult.Status.REJECTED_BY_GUARD) {
-                blocked++;
+            } else if (result.status() == TradeResult.Status.REJECTED_BY_GUARD
+                    || result.status() == TradeResult.Status.DISABLED) {
+                blocked++;   // vetoed by EconGuard, or frozen by an admin — skipped, not sold
             }
         }
         return new SellAllResult(distinct, units, proceeds, blocked);
@@ -146,6 +151,10 @@ public final class BazaarService {
         MarketItem item = market.get(itemId);
         if (item == null) {
             return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, TradeSide.SELL, itemId, "Unknown item.");
+        }
+        if (item.frozen()) {
+            return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.SELL, itemId,
+                    "This item is temporarily frozen.");
         }
         int held = eco.countHeld(player, itemId);
         if (held <= 0) {

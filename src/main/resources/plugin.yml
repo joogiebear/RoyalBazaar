@@ -21,7 +21,7 @@ libraries:
 commands:
   bazaar:
     description: Open the Bazaar.
-    usage: /bazaar [reload|price <item>]
+    usage: /bazaar [reload|price <item>|admin <set|freeze|unfreeze|reset> <item> [mid]]
     aliases: [bz, rbazaar]
 permissions:
   royalbazaar.use:

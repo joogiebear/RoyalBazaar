@@ -30,6 +30,13 @@ public final class MarketItem {
     private long updatedAt;
     private boolean dirty;
 
+    /**
+     * Frozen by an admin: trades are refused and reversion stops, so the price holds exactly where it
+     * was put while an incident is investigated. Deliberately in-memory only — a freeze is a manual
+     * intervention, and one that silently outlives a restart is a trap for whoever forgot it.
+     */
+    private boolean frozen;
+
     // ---- rolling week stats (transient) ----
     // Computed off-thread from rb_history and applied on the main thread; 0 means "no snapshot old
     // enough yet". Never persisted — the history table is the durable record, this is its cache.
@@ -98,6 +105,8 @@ public final class MarketItem {
     public double midWeekAgo() { return midWeekAgo; }
     public double weekLow() { return weekLow; }
     public double weekHigh() { return weekHigh; }
+    public boolean frozen() { return frozen; }
+    public void setFrozen(boolean frozen) { this.frozen = frozen; }
 
     /** Apply the latest history-derived week stats. Main thread. */
     public void setWeekStats(double midWeekAgo, double weekLow, double weekHigh) {

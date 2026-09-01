@@ -65,6 +65,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
                                 "sell", fmt(PricingEngine.sellPrice(item)),
                                 "mid", fmt(item.mid())));
             }
+            case "admin" -> admin(sender, args);
             default -> {
                 if (sender instanceof Player player) {
                     gui.openDefault(player);
@@ -72,6 +73,78 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             }
         }
         return true;
+    }
+
+    /**
+     * Incident tooling: pin, freeze or reset a price without touching the database by hand.
+     * {@code set}/{@code reset} go through {@code setMid}, so the change is flagged dirty and
+     * persisted by the normal write-behind flush; {@code freeze} is deliberately in-memory only
+     * (it clears on restart) so a forgotten freeze cannot quietly outlive its incident.
+     */
+    private void admin(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("royalbazaar.admin")) {
+            plugin.messages().send(sender, "no-permission", "&cNo permission.");
+            return;
+        }
+        if (args.length < 3) {
+            plugin.messages().send(sender, "admin-usage",
+                    "&cUsage: /bazaar admin <set|freeze|unfreeze|reset> <item> [mid]");
+            return;
+        }
+        MarketItem item = market.get(args[2]);
+        if (item == null) {
+            plugin.messages().send(sender, "unknown-item", "&cUnknown item: {item}",
+                    java.util.Map.of("item", args[2]));
+            return;
+        }
+        switch (args[1].toLowerCase()) {
+            case "set" -> {
+                if (args.length < 4) {
+                    plugin.messages().send(sender, "admin-usage",
+                            "&cUsage: /bazaar admin set <item> <mid>");
+                    return;
+                }
+                double mid;
+                try {
+                    mid = Double.parseDouble(args[3].replace(",", ""));
+                } catch (NumberFormatException bad) {
+                    plugin.messages().send(sender, "not-a-number", "&cNot a number.");
+                    return;
+                }
+                if (!Double.isFinite(mid) || mid <= 0) {
+                    plugin.messages().send(sender, "not-a-number", "&cThe mid must be a positive number.");
+                    return;
+                }
+                double clamped = PricingEngine.clamp(mid, item.floor(), item.ceiling());
+                double old = item.mid();
+                item.setMid(clamped);
+                plugin.messages().send(sender, "admin-set",
+                        "&aSet &f{item}&a mid: &e{old} &7-> &e{new}" + (clamped != mid
+                                ? " &7(clamped to this item's floor/ceiling)" : ""),
+                        java.util.Map.of("item", item.id(), "old", fmt(old), "new", fmt(clamped)));
+            }
+            case "reset" -> {
+                double old = item.mid();
+                item.setMid(PricingEngine.clamp(item.basePrice(), item.floor(), item.ceiling()));
+                plugin.messages().send(sender, "admin-reset",
+                        "&aReset &f{item}&a to its base price: &e{old} &7-> &e{new}",
+                        java.util.Map.of("item", item.id(), "old", fmt(old), "new", fmt(item.mid())));
+            }
+            case "freeze" -> {
+                item.setFrozen(true);
+                plugin.messages().send(sender, "admin-freeze",
+                        "&eFroze &f{item}&e: trades refused, price held. Clears on unfreeze or restart.",
+                        java.util.Map.of("item", item.id()));
+            }
+            case "unfreeze" -> {
+                item.setFrozen(false);
+                plugin.messages().send(sender, "admin-unfreeze",
+                        "&aUnfroze &f{item}&a: trading and reversion resumed.",
+                        java.util.Map.of("item", item.id()));
+            }
+            default -> plugin.messages().send(sender, "admin-usage",
+                    "&cUsage: /bazaar admin <set|freeze|unfreeze|reset> <item> [mid]");
+        }
     }
 
     private String fmt(double v) {
@@ -85,6 +158,9 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             if ("reload".startsWith(args[0].toLowerCase()) && sender.hasPermission("royalbazaar.admin")) {
                 out.add("reload");
             }
+            if ("admin".startsWith(args[0].toLowerCase()) && sender.hasPermission("royalbazaar.admin")) {
+                out.add("admin");
+            }
             if ("price".startsWith(args[0].toLowerCase())) {
                 out.add("price");
             }
@@ -92,6 +168,20 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             for (MarketItem item : market.all()) {
                 if (item.id().startsWith(args[1])) {
                     out.add(item.id());
+                }
+            }
+        } else if (args[0].equalsIgnoreCase("admin") && sender.hasPermission("royalbazaar.admin")) {
+            if (args.length == 2) {
+                for (String verb : List.of("set", "freeze", "unfreeze", "reset")) {
+                    if (verb.startsWith(args[1].toLowerCase())) {
+                        out.add(verb);
+                    }
+                }
+            } else if (args.length == 3) {
+                for (MarketItem item : market.all()) {
+                    if (item.id().startsWith(args[2])) {
+                        out.add(item.id());
+                    }
                 }
             }
         }
