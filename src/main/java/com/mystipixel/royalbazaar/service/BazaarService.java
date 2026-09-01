@@ -64,6 +64,10 @@ public final class BazaarService {
         if (amount <= 0) {
             return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId, "Invalid amount.");
         }
+        // Items are handed over through int-sized stacks, so an order beyond int range would be paid
+        // for in full but truncated in the (int) cast below. Clamp before pricing so the cost and the
+        // delivery always describe the same quantity.
+        amount = Math.min(amount, Integer.MAX_VALUE);
 
         double cost = PricingEngine.buyCost(item, amount);
         if (!guard.allow(player, TradeSide.BUY, itemId, amount, cost)) {
