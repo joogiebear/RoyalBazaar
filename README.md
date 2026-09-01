@@ -97,7 +97,7 @@ formula edge case can send a price to 0 or ∞.
 
 | | |
 |---|---|
-| **Server** | Paper 1.21+ (tested on Paper 26.2 / Java 25) |
+| **Server** | Paper 26.2 or newer (Java 25) |
 | **Required** | Vault **and an economy provider** (EssentialsX, CMI, an EcoBits currency with `vault: true`, …) |
 | **Optional** | eco (for `ecoitems:` items), EcoShop (for price anchoring), EconGuard, PlaceholderAPI |
 
