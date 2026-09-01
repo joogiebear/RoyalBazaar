@@ -137,8 +137,33 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
             getLogger().info("Registered PlaceholderAPI expansion.");
         }
 
+        refreshWeekStats();
         setupMetrics();
         getLogger().info("RoyalBazaar enabled.");
+    }
+
+    /**
+     * Recompute each item's rolling 7-day stats (mid-a-week-ago, low, high) from rb_history: query
+     * off-thread, apply on the main thread. Runs at startup and again after every history snapshot,
+     * so the 7d placeholders drift at most one snapshot interval behind.
+     */
+    private void refreshWeekStats() {
+        long since = System.currentTimeMillis() - 7L * 24L * 60L * 60L * 1000L;
+        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                Map<String, double[]> stats = database.weekStats(since);
+                getServer().getScheduler().runTask(this, () -> {
+                    for (MarketItem item : market.all()) {
+                        double[] row = stats.get(item.id());
+                        if (row != null) {
+                            item.setWeekStats(row[0], row[1], row[2]);
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "Week-stats refresh failed", e);
+            }
+        });
     }
 
     private void tryLateEnable() {
@@ -237,6 +262,9 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
             } catch (Exception e) {
                 getLogger().log(Level.WARNING, "History snapshot failed", e);
             }
+            // A fresh snapshot just landed — recompute the 7d stats from it. Scheduler calls are
+            // thread-safe, so kicking the refresh off from this async task is fine.
+            refreshWeekStats();
         });
     }
 

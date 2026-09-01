@@ -291,6 +291,10 @@ public final class BazaarService {
         p.put("rbazaar_volume_24h", String.valueOf(item.volume().bought24h() + item.volume().sold24h()));
         p.put("rbazaar_change_24h", changePct(item));
         p.put("rbazaar_trend", trendArrow(item));
+        p.put("rbazaar_change_7d", pctSince(item.mid(), item.midWeekAgo()));
+        p.put("rbazaar_trend_7d", trendSince(item.mid(), item.midWeekAgo()));
+        p.put("rbazaar_low_7d", item.weekLow() > 0 ? vault.formatPrice(item.weekLow()) : "—");
+        p.put("rbazaar_high_7d", item.weekHigh() > 0 ? vault.formatPrice(item.weekHigh()) : "—");
         if (viewer != null) {
             int held = eco.countHeld(viewer, item.id());
             p.put("rbazaar_held_amount", String.valueOf(held));
@@ -390,6 +394,29 @@ public final class BazaarService {
         }
         double pct = (item.mid() - item.midYesterday()) / item.midYesterday() * 100.0;
         return String.format("%s%.1f%%", pct >= 0 ? "&a+" : "&c", pct);
+    }
+
+    /** Percentage move from {@code then} to {@code now}, or a dash while no baseline exists yet. */
+    private String pctSince(double now, double then) {
+        if (then <= 0) {
+            return "&7—";
+        }
+        double pct = (now - then) / then * 100.0;
+        return String.format("%s%.1f%%", pct >= 0 ? "&a+" : "&c", pct);
+    }
+
+    private String trendSince(double now, double then) {
+        if (then <= 0) {
+            return "&7▬";
+        }
+        double eps = then * 0.001;
+        if (now - then > eps) {
+            return "&a▲";
+        }
+        if (now - then < -eps) {
+            return "&c▼";
+        }
+        return "&7▬";
     }
 
     private String trendArrow(MarketItem item) {

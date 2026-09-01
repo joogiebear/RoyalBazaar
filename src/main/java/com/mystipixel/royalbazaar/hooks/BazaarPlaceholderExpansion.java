@@ -61,6 +61,11 @@ public final class BazaarPlaceholderExpansion extends PlaceholderExpansion {
             case "buy" -> vault.format(PricingEngine.buyPrice(item));
             case "sell" -> vault.format(PricingEngine.sellPrice(item));
             case "mid" -> vault.format(item.mid());
+            // Plain-text percentages (no colour codes): scoreboards and holograms style themselves.
+            case "change24h" -> item.midYesterday() <= 0 ? "0.0%"
+                    : String.format("%+.1f%%", (item.mid() - item.midYesterday()) / item.midYesterday() * 100.0);
+            case "change7d" -> item.midWeekAgo() <= 0 ? "0.0%"
+                    : String.format("%+.1f%%", (item.mid() - item.midWeekAgo()) / item.midWeekAgo() * 100.0);
             default -> null;
         };
     }

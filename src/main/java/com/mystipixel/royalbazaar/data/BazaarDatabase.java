@@ -214,6 +214,46 @@ public final class BazaarDatabase {
         }
     }
 
+    /**
+     * Rolling week stats from the price history: for every item with at least one snapshot since
+     * {@code sinceTs}, the mid at the start of that window plus the window's low and high, as
+     * {@code {midThen, low, high}}. Items with no snapshots in the window are simply absent.
+     *
+     * <p>If retention is shorter than the window, "the start of the window" degrades to "the oldest
+     * snapshot kept" — a shorter honest baseline rather than no baseline.
+     */
+    public Map<String, double[]> weekStats(long sinceTs) throws SQLException {
+        Map<String, double[]> out = new HashMap<>();
+        String range = "SELECT item_id, MIN(mid_price) lo, MAX(mid_price) hi "
+                + "FROM rb_history WHERE ts >= ? GROUP BY item_id";
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(range)) {
+            ps.setLong(1, sinceTs);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.put(rs.getString("item_id"),
+                            new double[]{0.0, rs.getDouble("lo"), rs.getDouble("hi")});
+                }
+            }
+        }
+        // The mid at each item's earliest snapshot inside the window (PK (item_id, ts) makes the
+        // join unambiguous).
+        String then = "SELECT h.item_id, h.mid_price FROM rb_history h "
+                + "JOIN (SELECT item_id, MIN(ts) mts FROM rb_history WHERE ts >= ? GROUP BY item_id) x "
+                + "ON x.item_id = h.item_id AND x.mts = h.ts";
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(then)) {
+            ps.setLong(1, sinceTs);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    double[] row = out.get(rs.getString("item_id"));
+                    if (row != null) {
+                        row[0] = rs.getDouble("mid_price");
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
     /** Append a trade to the audit log — EconGuard's feed and your dispute trail. */
     public void logTransaction(UUID player, String itemId, TradeSide side, long qty, double unitMid, double total, long ts) {
         String sql = "INSERT INTO rb_transactions (ts, player, item_id, side, quantity, unit_mid, total) VALUES (?,?,?,?,?,?,?)";

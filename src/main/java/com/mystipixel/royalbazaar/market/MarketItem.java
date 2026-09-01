@@ -30,6 +30,13 @@ public final class MarketItem {
     private long updatedAt;
     private boolean dirty;
 
+    // ---- rolling week stats (transient) ----
+    // Computed off-thread from rb_history and applied on the main thread; 0 means "no snapshot old
+    // enough yet". Never persisted — the history table is the durable record, this is its cache.
+    private double midWeekAgo;
+    private double weekLow;
+    private double weekHigh;
+
     /**
      * Explicit grid position from config ({@code row}/{@code column} or {@code slot}), or -1 to let the
      * item flow into the next free content slot. Set once while categories load, like the pricing fields.
@@ -88,6 +95,16 @@ public final class MarketItem {
     public long updatedAt() { return updatedAt; }
     public boolean dirty() { return dirty; }
     public VolumeWindow volume() { return volume; }
+    public double midWeekAgo() { return midWeekAgo; }
+    public double weekLow() { return weekLow; }
+    public double weekHigh() { return weekHigh; }
+
+    /** Apply the latest history-derived week stats. Main thread. */
+    public void setWeekStats(double midWeekAgo, double weekLow, double weekHigh) {
+        this.midWeekAgo = midWeekAgo;
+        this.weekLow = weekLow;
+        this.weekHigh = weekHigh;
+    }
 
     // ---- state mutators (main thread only) ----
 
