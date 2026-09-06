@@ -1,3 +1,21 @@
+## 2026.36.0 — 2026-09-06
+
+### ✨ Features
+- wire the dormant EconGuard veto (`7397dee`)
+- /bazaar sellall [category] command (`6fa198e`)
+- admin price tooling - set, freeze, unfreeze, reset (`0bd2f20`)
+- market trends menu - top risers, fallers and most-traded (`10a780b`)
+- surface the price history the bazaar was already recording (`547ed3f`)
+
+### 🐛 Fixes
+- clamp buy orders to int range before pricing (`55827d8`)
+
+### ♻️ Refactors
+- move the custom-amount prompt from chat onto a sign (`2d90773`)
+
+### 📝 Documentation
+- state the Paper 26.2-or-newer requirement (`c9cd2e7`)
+
 ## 2026.34.0 — 2026-08-21
 
 ### ✨ Features
