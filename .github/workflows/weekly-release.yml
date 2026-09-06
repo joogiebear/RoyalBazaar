@@ -34,12 +34,20 @@ jobs:
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          # 10:00 Central or later, NOT exactly 10. GitHub routinely runs a scheduled workflow
+          # hours after its cron time, and an equality check turned that delay into a silently
+          # skipped release: the run went green, the gate said "not 10", and the release job never
+          # started. Weeks passed with nothing published and nothing looking wrong.
+          #
+          # Releasing twice is not a risk here. The 15:00 and 16:00 UTC crons exist to cover both
+          # DST offsets, and whichever runs second finds no new commits since the tag the first one
+          # made and stops there. The floor only has to reject the winter 09:00 Central run.
           HOUR=$(TZ=America/Chicago date +%H)
-          if [ "$HOUR" = "10" ]; then
-            echo "It is 10:00 in America/Chicago - proceeding."
+          if [ "$((10#$HOUR))" -ge 10 ]; then
+            echo "It is ${HOUR}:00 in America/Chicago (>= 10:00) - proceeding."
             echo "proceed=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Central hour is $HOUR, not 10 - skipping this trigger."
+            echo "Central hour is $HOUR, before 10:00 - skipping this trigger."
             echo "proceed=false" >> "$GITHUB_OUTPUT"
           fi
 
