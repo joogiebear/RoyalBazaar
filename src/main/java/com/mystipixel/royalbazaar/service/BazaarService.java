@@ -22,11 +22,13 @@ import java.util.Map;
 
 /**
  * The buy/sell transaction flow. Everything here runs on the main thread, so the price mutation,
- * balance move and inventory change are effectively atomic (no locks, no partial trades). The DB
- * audit write is dispatched async.
+ * balance move and inventory change do not interleave with other scheduled tasks. This is not a
+ * transaction across Vault and player persistence: explicit rejected sale payments restore the
+ * reserved inventory, while provider exceptions/crashes have an unknown outcome. The DB audit
+ * write is dispatched async.
  *
  * <p>Order of operations mirrors the design doc: resolve → quote → EconGuard veto → funds/items
- * check → move money → move items → apply market impact → record.
+ * check → reserve sell items → move money → deliver buy items → apply market impact → record.
  */
 public final class BazaarService {
 
@@ -156,6 +158,9 @@ public final class BazaarService {
             return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.SELL, itemId,
                     "This item is temporarily frozen.");
         }
+        if (amount <= 0) {
+            return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.SELL, itemId, "Invalid amount.");
+        }
         int held = eco.countHeld(player, itemId);
         if (held <= 0) {
             return TradeResult.fail(TradeResult.Status.INSUFFICIENT_ITEMS, TradeSide.SELL, itemId, "You have none to sell.");
@@ -167,8 +172,21 @@ public final class BazaarService {
             return TradeResult.fail(TradeResult.Status.REJECTED_BY_GUARD, TradeSide.SELL, itemId, "Trade blocked.");
         }
 
-        removeItems(player, itemId, (int) fill);
-        vault.deposit(player, proceeds);
+        // Plan on detached stacks: a shallow array copy would still mutate the originals, losing
+        // quantities/metadata when a rejected payment is rolled back. Do not resolve replacement
+        // items from their ID: a custom stack may have unique metadata which must survive rejection.
+        ItemStack[] before = player.getInventory().getStorageContents();
+        ItemStack[] reserved = reserveItems(before, itemId, (int) fill);
+        if (reserved == null) {
+            return TradeResult.fail(TradeResult.Status.INSUFFICIENT_ITEMS, TradeSide.SELL, itemId,
+                    "Your inventory changed. Please try again.");
+        }
+        player.getInventory().setStorageContents(reserved);
+        if (!vault.deposit(player, proceeds)) {
+            player.getInventory().setStorageContents(before);
+            return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.SELL, itemId,
+                    "Payment failed. Your items have been returned.");
+        }
         item.setMid(PricingEngine.midAfterSell(item, fill));
         item.volume().recordSell(fill);
         record(player, itemId, TradeSide.SELL, fill, item.mid(), proceeds);
@@ -239,9 +257,13 @@ public final class BazaarService {
         }
     }
 
-    private void removeItems(Player player, String itemId, int amount) {
+    /** Reserve the exact quantity without changing any live stack; null means the quote is stale. */
+    private ItemStack[] reserveItems(ItemStack[] original, String itemId, int amount) {
         int remaining = amount;
-        ItemStack[] contents = player.getInventory().getStorageContents();
+        ItemStack[] contents = new ItemStack[original.length];
+        for (int i = 0; i < original.length; i++) {
+            contents[i] = original[i] == null ? null : original[i].clone();
+        }
         for (int i = 0; i < contents.length && remaining > 0; i++) {
             ItemStack stack = contents[i];
             if (!eco.matches(itemId, stack)) {
@@ -254,7 +276,7 @@ public final class BazaarService {
                 contents[i] = null;
             }
         }
-        player.getInventory().setStorageContents(contents);
+        return remaining == 0 ? contents : null;
     }
 
     // ------------------------------------------------------------------ audit
