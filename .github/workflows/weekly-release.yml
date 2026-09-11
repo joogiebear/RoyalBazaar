@@ -1,14 +1,22 @@
 name: Weekly Release
 
-# Fires every Friday at 10:00 America/Chicago (Central), DST-safe.
-# GitHub cron is UTC with no DST awareness, so we trigger at both candidate
-# UTC times and gate on the real Central hour inside the job.
+# Routine changes ship together on Sunday; game-breaking fixes may ship early.
+# Keep unapproved features off the default branch. Version format: YEAR.ISOWEEK.PATCH.
+# GitHub may delay cron execution; the scheduled time is not a wall-clock SLA.
 on:
   schedule:
-    - cron: '0 15 * * 5'   # 10:00 Central during CDT (summer)
-    - cron: '0 16 * * 5'   # 10:00 Central during CST (winter)
+    - cron: '0 10 * * 0'
+      timezone: America/Chicago
   workflow_dispatch:
     inputs:
+      emergency:
+        description: 'Game-breaking fix that cannot wait until Sunday'
+        type: boolean
+        default: false
+      reason:
+        description: 'Required for an emergency release; describe the game-breaking bug'
+        type: string
+        default: ''
       force:
         description: 'Release even when there are no new commits this week'
         type: boolean
@@ -28,32 +36,28 @@ jobs:
       proceed: ${{ steps.check.outputs.proceed }}
     steps:
       - id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EMERGENCY: ${{ inputs.emergency }}
+          RELEASE_REASON: ${{ inputs.reason }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual run - proceeding."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # 10:00 Central or later, NOT exactly 10. GitHub routinely runs a scheduled workflow
-          # hours after its cron time, and an equality check turned that delay into a silently
-          # skipped release: the run went green, the gate said "not 10", and the release job never
-          # started. Weeks passed with nothing published and nothing looking wrong.
-          #
-          # Releasing twice is not a risk here. The 15:00 and 16:00 UTC crons exist to cover both
-          # DST offsets, and whichever runs second finds no new commits since the tag the first one
-          # made and stops there. The floor only has to reject the winter 09:00 Central run.
+          set -euo pipefail
+          # The native timezone-aware schedule is the authority, even if GitHub starts it late.
+          # Manual Sunday reruns are allowed; an early release requires an explicit emergency reason.
+          DAY=$(TZ=America/Chicago date +%u)
           HOUR=$(TZ=America/Chicago date +%H)
-          if [ "$((10#$HOUR))" -ge 10 ]; then
-            echo "It is ${HOUR}:00 in America/Chicago (>= 10:00) - proceeding."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          if [[ "$EVENT_NAME" == schedule ]] || [[ "$DAY" == 7 && "$((10#$HOUR))" -ge 10 ]]; then
+            echo 'proceed=true' >> "$GITHUB_OUTPUT"
+          elif [[ "$EMERGENCY" == true && -n "${RELEASE_REASON//[[:space:]]/}" ]]; then
+            echo 'proceed=true' >> "$GITHUB_OUTPUT"
           else
-            echo "Central hour is $HOUR, before 10:00 - skipping this trigger."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            echo '::error::Routine releases wait until Sunday at 10 a.m. Central. Early releases require emergency=true and a game-breaking bug reason.'
+            exit 1
           fi
 
   release:
     needs: gate
-    if: needs.gate.outputs.proceed == 'true'
+    if: needs.gate.outputs.proceed == 'true' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -112,7 +116,7 @@ jobs:
 
       - name: Build
         if: steps.prep.outputs.release == 'true'
-        run: mvn -B -DskipTests package
+        run: mvn -B verify
 
       - name: Locate and name jar
         if: steps.prep.outputs.release == 'true'
