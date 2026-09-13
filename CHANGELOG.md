@@ -1,3 +1,9 @@
+## 2026.37.0 — 2026-09-13
+
+### 🐛 Fixes
+- restore sale items when Vault rejects payment (`7a4cfb2`)
+- release at 10:00 Central or later, not exactly 10:00 (`00d137d`)
+
 ## 2026.36.0 — 2026-09-06
 
 ### ✨ Features
