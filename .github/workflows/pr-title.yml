@@ -1,0 +1,32 @@
+name: PR title
+
+# Every pull request title must start with a change type, so the history and the
+# release notes say what kind of change each merge was. The accepted types match
+# .github/pull_request_template.md. An optional scope and a "!" for breaking
+# changes are allowed:  fix: ...   feat(menu): ...   refactor!: ...
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  title:
+    name: Title has a change type
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check title
+        # The title is passed through the environment, never interpolated into the
+        # script, so a title containing shell syntax cannot run as a command.
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          types='fix|feat|build|chore|docs|test|refactor|ci|localize|bump|revert'
+          if printf '%s' "$TITLE" | grep -Eq "^($types)(\([a-z0-9._/-]+\))?!?: [^ ].*"; then
+            echo "OK: $TITLE"
+          else
+            echo "::error::PR title must start with a change type, e.g. 'fix: stop fuel duplicating on swap'."
+            echo "Allowed types: ${types//|/, }"
+            echo "Got: $TITLE"
+            exit 1
+          fi
