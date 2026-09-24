@@ -30,8 +30,16 @@ import org.bstats.charts.SimplePie;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import com.mystipixel.royalbazaar.gui.BazaarMenuHolder;
+import org.bukkit.entity.Player;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 public final class RoyalBazaarPlugin extends JavaPlugin {
@@ -58,6 +66,13 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     private BazaarPlaceholderExpansion placeholderExpansion;
     private boolean fullyEnabled;
 
+    /**
+     * Every state flush, history snapshot and stats query runs on this one thread, in submission
+     * order. With the shared async pool an older flush could land after a newer one and persist a
+     * stale price, and shutdown had no way to wait for writes still in flight.
+     */
+    private ExecutorService dbWriter;
+
     @Override
     public void onEnable() {
         this.config = new PluginConfig(this);
@@ -83,9 +98,14 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         market.load(config.loadCategories(), config.emaAlpha(), ecoShop);
 
         this.database = new BazaarDatabase(getDataFolder(), config.storageSection(), getLogger());
+        this.dbWriter = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "RoyalBazaar-DB");
+            t.setDaemon(true);
+            return t;
+        });
         try {
             database.init();
-            restoreState();
+            restoreState(null);
         } catch (Exception e) {
             getLogger().log(Level.SEVERE, "Failed to initialise storage — disabling RoyalBazaar.", e);
             getServer().getPluginManager().disablePlugin(this);
@@ -144,27 +164,51 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     }
 
     /**
-     * Recompute each item's rolling 7-day stats (mid-a-week-ago, low, high) from rb_history: query
-     * off-thread, apply on the main thread. Runs at startup and again after every history snapshot,
-     * so the 7d placeholders drift at most one snapshot interval behind.
+     * Recompute each item's history-derived stats: the rolling 7-day figures (mid-a-week-ago, low,
+     * high) and the 24h baseline behind every "24h change". Queried off-thread, applied on the main
+     * thread. Runs at startup, after a reload and after every history snapshot, so they drift at most
+     * one snapshot interval behind.
      */
     private void refreshWeekStats() {
-        long since = System.currentTimeMillis() - 7L * 24L * 60L * 60L * 1000L;
-        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+        long now = System.currentTimeMillis();
+        long weekAgo = now - 7L * 24L * 60L * 60L * 1000L;
+        long dayAgo = now - 24L * 60L * 60L * 1000L;
+        submitDb(() -> {
             try {
-                Map<String, double[]> stats = database.weekStats(since);
-                getServer().getScheduler().runTask(this, () -> {
+                Map<String, double[]> stats = database.weekStats(weekAgo);
+                Map<String, Double> day = database.earliestMidSince(dayAgo);
+                runSync(() -> {
                     for (MarketItem item : market.all()) {
                         double[] row = stats.get(item.id());
                         if (row != null) {
                             item.setWeekStats(row[0], row[1], row[2]);
                         }
+                        Double baseline = day.get(item.id());
+                        if (baseline != null) {
+                            item.setMidYesterday(baseline);
+                        }
                     }
                 });
             } catch (Exception e) {
-                getLogger().log(Level.WARNING, "Week-stats refresh failed", e);
+                getLogger().log(Level.WARNING, "History stats refresh failed", e);
             }
         });
+    }
+
+    /** Queue a database task on the writer thread; dropped quietly once shutdown has begun. */
+    private void submitDb(Runnable task) {
+        try {
+            dbWriter.execute(task);
+        } catch (RejectedExecutionException ignored) {
+            // disabling — the final synchronous flush covers state
+        }
+    }
+
+    /** Hop back to the main thread, unless the plugin has been disabled in the meantime. */
+    private void runSync(Runnable task) {
+        if (isEnabled()) {
+            getServer().getScheduler().runTask(this, task);
+        }
     }
 
     private void tryLateEnable() {
@@ -193,15 +237,32 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         cancelTasks();
+        // Menu icons are real item stacks. Once our click listener is gone, a menu left open is a
+        // chest anyone can take them out of.
+        for (Player player : getServer().getOnlinePlayers()) {
+            if (BazaarMenuHolder.isMenu(player.getOpenInventory().getTopInventory())) {
+                player.closeInventory();
+            }
+        }
         if (signInput != null) {
             signInput.shutdown();
         }
         if (placeholderExpansion != null) {
             placeholderExpansion.unregister();
         }
+        if (dbWriter != null) {
+            dbWriter.shutdown();
+            try {
+                if (!dbWriter.awaitTermination(10, TimeUnit.SECONDS)) {
+                    getLogger().warning("Database writes still running after 10s; continuing shutdown.");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
         if (database != null && market != null) {
             try {
-                database.flushState(market.allState()); // final synchronous flush
+                database.flushState(market.allState()); // final synchronous flush, after queued writes
             } catch (Exception e) {
                 getLogger().log(Level.WARNING, "Failed final state flush", e);
             }
@@ -209,9 +270,13 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         }
     }
 
-    private void restoreState() throws Exception {
+    /** Seed items from their persisted rows; {@code only} limits it to those ids, null means all. */
+    private void restoreState(Set<String> only) throws Exception {
         Map<String, double[]> saved = database.loadState();
         for (MarketItem item : market.all()) {
+            if (only != null && !only.contains(item.id())) {
+                continue;
+            }
             double[] row = saved.get(item.id());
             if (row != null) {
                 item.loadState(row[0], row[1], (long) row[2]);
@@ -240,14 +305,14 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         if (dirty.isEmpty()) {
             return;
         }
-        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+        submitDb(() -> {
             try {
                 database.flushState(dirty);
             } catch (Exception e) {
                 getLogger().log(Level.WARNING, "Write-behind flush failed — re-queueing for the next flush", e);
                 // Flags were already cleared, so without this the failed prices would be lost for good.
                 List<String> ids = dirty.stream().map(MarketState::id).toList();
-                getServer().getScheduler().runTask(this, () -> market.remarkDirty(ids));
+                runSync(() -> market.remarkDirty(ids));
             }
         });
     }
@@ -256,7 +321,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         List<MarketState> items = market.allState();   // detached copy on the main thread
         long ts = System.currentTimeMillis();
         int retentionDays = config.historyRetentionDays();
-        getServer().getScheduler().runTaskAsynchronously(this, () -> {
+        submitDb(() -> {
             try {
                 database.snapshot(items, ts);
                 if (retentionDays > 0) {
@@ -266,8 +331,8 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
             } catch (Exception e) {
                 getLogger().log(Level.WARNING, "History snapshot failed", e);
             }
-            // A fresh snapshot just landed — recompute the 7d stats from it. Scheduler calls are
-            // thread-safe, so kicking the refresh off from this async task is fine.
+            // A fresh snapshot just landed — recompute the history stats from it. This queues behind
+            // the current task on the same writer thread.
             refreshWeekStats();
         });
     }
@@ -293,14 +358,19 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         config.reload();
         messages.reload();
         this.ecoShop = new EcoShopHook(getDataFolder().getParentFile(), getLogger());
-        market.load(config.loadCategories(), config.emaAlpha(), ecoShop);
-        try {
-            restoreState();
-        } catch (Exception e) {
-            getLogger().log(Level.WARNING, "State restore during reload failed", e);
+        // Items that survive the reload keep their live state; only newly listed ones are seeded from
+        // the database, which can be up to one flush interval behind the market.
+        Set<String> added = market.load(config.loadCategories(), config.emaAlpha(), ecoShop);
+        if (!added.isEmpty()) {
+            try {
+                restoreState(added);
+            } catch (Exception e) {
+                getLogger().log(Level.WARNING, "State restore during reload failed", e);
+            }
         }
         menus.reload();
         scheduleTasks();
+        refreshWeekStats();
     }
     /**
      * Anonymous usage reporting via bStats.

@@ -187,7 +187,6 @@ public final class BazaarDatabase {
         }
     }
 
-    /** Append a price snapshot for the graph / 24h stats. */
     /**
      * Delete price history older than {@code cutoff}. Without this rb_history only ever grows — one
      * row per item per snapshot, so a few hundred items reach millions of rows a year and every write
@@ -201,6 +200,7 @@ public final class BazaarDatabase {
         }
     }
 
+    /** Append a price snapshot for the graph / 24h stats. */
     public void snapshot(Collection<MarketState> items, long ts) throws SQLException {
         String sql = "INSERT INTO rb_history (item_id, ts, mid_price) VALUES (?,?,?)";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
@@ -235,19 +235,31 @@ public final class BazaarDatabase {
                 }
             }
         }
-        // The mid at each item's earliest snapshot inside the window (PK (item_id, ts) makes the
-        // join unambiguous).
-        String then = "SELECT h.item_id, h.mid_price FROM rb_history h "
+        for (Map.Entry<String, Double> then : earliestMidSince(sinceTs).entrySet()) {
+            double[] row = out.get(then.getKey());
+            if (row != null) {
+                row[0] = then.getValue();
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Each item's mid at its earliest snapshot at or after {@code sinceTs}: the baseline for a
+     * "change over the last N hours" figure. Items with no snapshot in the window are absent. Derived
+     * from history rather than a timer, so it survives restarts and needs no roll-over schedule.
+     */
+    public Map<String, Double> earliestMidSince(long sinceTs) throws SQLException {
+        Map<String, Double> out = new HashMap<>();
+        // PK (item_id, ts) makes the join unambiguous.
+        String sql = "SELECT h.item_id, h.mid_price FROM rb_history h "
                 + "JOIN (SELECT item_id, MIN(ts) mts FROM rb_history WHERE ts >= ? GROUP BY item_id) x "
                 + "ON x.item_id = h.item_id AND x.mts = h.ts";
-        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(then)) {
+        try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, sinceTs);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    double[] row = out.get(rs.getString("item_id"));
-                    if (row != null) {
-                        row[0] = rs.getDouble("mid_price");
-                    }
+                    out.put(rs.getString("item_id"), rs.getDouble("mid_price"));
                 }
             }
         }
