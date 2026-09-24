@@ -58,7 +58,11 @@ public final class SignInput implements Listener {
         if (!player.isOnline()) {
             return;
         }
-        Block block = player.getLocation().getBlock();
+        Block block = signSpot(player);
+        if (block == null) {
+            callback.accept(null);
+            return;
+        }
         Location loc = block.getLocation();
         BlockData original = block.getBlockData();
         block.setType(Material.OAK_SIGN, false);
@@ -73,6 +77,34 @@ public final class SignInput implements Listener {
         sign.update(true, false);
         pending.put(loc, new Pending(player.getUniqueId(), original, callback));
         player.openSign(sign, Side.FRONT);
+    }
+
+    /**
+     * Where to put the throwaway sign: the player's feet, else the block at their head. Putting the
+     * original back only restores block data, not a block entity's contents, so a block with one (a
+     * sign's text, a banner's patterns) is never borrowed. Nor is a block another player's prompt is
+     * already using, since its "original" would then be that prompt's sign. Air is preferred, so
+     * nothing visible changes. {@code null} if neither spot will do.
+     */
+    private Block signSpot(Player player) {
+        Block feet = player.getLocation().getBlock();
+        Block head = feet.getRelative(org.bukkit.block.BlockFace.UP);
+        Block fallback = null;
+        for (Block candidate : List.of(feet, head)) {
+            if (pending.containsKey(candidate.getLocation())
+                    || candidate.getY() < candidate.getWorld().getMinHeight()
+                    || candidate.getY() >= candidate.getWorld().getMaxHeight()
+                    || candidate.getState(false) instanceof org.bukkit.block.TileState) {
+                continue;
+            }
+            if (candidate.getType().isAir()) {
+                return candidate;
+            }
+            if (fallback == null) {
+                fallback = candidate;
+            }
+        }
+        return fallback;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
