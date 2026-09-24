@@ -1,3 +1,17 @@
+## 2026.39.1 — 2026-09-24
+
+### 🐛 Fixes
+- enforce royalbazaar.use and accept bare item ids (`0529074`)
+- keep the live market across reload and derive 24h change from history (`1561c66`)
+- validate item tuning, bracket EcoShop prices and cap order size (`30de0c4`)
+- vanilla listings only take plain items (`f9ec225`)
+- lock menus by inventory holder and keep the sign prompt off real blocks (`0f34287`)
+- end prompts whose answer can never arrive (`e1b4359`)
+- keep the sign prompt off block entities and blocks already in use (`5d80de2`)
+
+### 📝 Documentation
+- add MIT license (`f30a718`)
+
 ## 2026.39.0 — 2026-09-23
 
 ### 🔧 Other
