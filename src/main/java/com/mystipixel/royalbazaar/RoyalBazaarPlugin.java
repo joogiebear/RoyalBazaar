@@ -50,6 +50,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     private BazaarService service;
     private MenuManager menus;
     private GuiManager gui;
+    private SignInput signInput;
 
     private BukkitTask tickTask;
     private BukkitTask flushTask;
@@ -116,7 +117,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         this.menus = new MenuManager(this);
         this.gui = new GuiManager(menus, market, service, eco);
 
-        SignInput signInput = new SignInput(this);
+        this.signInput = new SignInput(this);
         getServer().getPluginManager().registerEvents(signInput, this);
         // Sign-backed, so it no longer listens to chat and needs no event registration of its own.
         AmountPrompt prompt = new AmountPrompt(service, gui, messages, signInput);
@@ -192,6 +193,9 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         cancelTasks();
+        if (signInput != null) {
+            signInput.shutdown();
+        }
         if (placeholderExpansion != null) {
             placeholderExpansion.unregister();
         }

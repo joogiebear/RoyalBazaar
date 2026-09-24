@@ -189,6 +189,9 @@ public final class EffectDispatcher {
             return;
         }
         signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8How many", "&8to buy?"), typed -> {
+            if (typed == null && !SignInput.showingOwnInventory(player)) {
+                return;                             // another plugin's menu took over — leave it be
+            }
             if (typed == null || typed.isBlank()) {
                 gui.openBuy(player, itemId);        // cancelled — back where they were
                 return;
@@ -251,6 +254,9 @@ public final class EffectDispatcher {
     /** Ask for a search term on a sign, then show the results. */
     private void beginSearch(Player player) {
         signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8Type an item", "&8name to search"), query -> {
+            if (query == null && !SignInput.showingOwnInventory(player)) {
+                return;                       // another plugin's menu took over — leave it be
+            }
             if (query == null || query.isBlank()) {
                 gui.openDefault(player);      // cancelled or the sign wouldn't open — put them back
                 return;

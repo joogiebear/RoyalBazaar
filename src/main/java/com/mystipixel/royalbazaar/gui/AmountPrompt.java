@@ -40,8 +40,11 @@ public final class AmountPrompt {
                 typed -> finish(player, itemId, buy, typed));
     }
 
-    /** Runs on the main thread with what came off the sign (null when it could not be opened). */
+    /** Runs on the main thread with what came off the sign (null when no answer is coming). */
     private void finish(Player player, String itemId, boolean buy, String typed) {
+        if (typed == null && !SignInput.showingOwnInventory(player)) {
+            return;                               // another plugin's menu took over — leave it be
+        }
         if (typed == null || typed.isBlank() || typed.equalsIgnoreCase("cancel")) {
             gui.openProduct(player, itemId);      // cancelled — back where they were
             return;
