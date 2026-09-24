@@ -55,7 +55,8 @@ jobs:
           echo "release=true" >> "$GITHUB_OUTPUT"
 
           # Calendar version: YEAR.ISOWEEK.PATCH (matches existing scheme, e.g. 2026.28.0)
-          YEAR=$(TZ=America/Chicago date +%Y)
+          # %G is the year the ISO week belongs to; %Y would give 2027.53 on 1 Jan 2027.
+          YEAR=$(TZ=America/Chicago date +%G)
           WEEK=$(( 10#$(TZ=America/Chicago date +%V) ))
           PATCH=0
           LATEST_THIS_WEEK=$(git tag -l "${YEAR}.${WEEK}.*" | sort -V | tail -1 || true)

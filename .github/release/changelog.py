@@ -53,7 +53,12 @@ for line in log.splitlines():
         key, desc = "other", subj
     buckets[key].append(f"- {desc} (`{sha}`)")
 
-date = datetime.date.today().isoformat()
+# Date in the same timezone the release workflow uses to compute the version.
+try:
+    from zoneinfo import ZoneInfo
+    date = datetime.datetime.now(ZoneInfo("America/Chicago")).date().isoformat()
+except Exception:  # no tz database (e.g. Windows without tzdata)
+    date = datetime.date.today().isoformat()
 out = [f"## {version} — {date}", ""]
 has_entries = False
 for key, title in GROUPS:
