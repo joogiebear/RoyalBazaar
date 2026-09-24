@@ -11,7 +11,6 @@ import com.mystipixel.royalbazaar.market.MarketItem;
 import com.mystipixel.royalbazaar.market.MarketManager;
 import com.mystipixel.royalbazaar.service.BazaarService;
 import com.mystipixel.royalbazaar.util.Text;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -116,7 +115,7 @@ public final class GuiManager {
 
         Map<String, String> base = new HashMap<>();
         base.put("rbazaar_category", "Search: " + query + " (" + hits.size() + ")");
-        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
+        Inventory inv = BazaarMenuHolder.create(tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
         tmpl.applyFiller(inv);
         placeFixedSlots(tmpl, inv, view, base);
         placeArrows(tmpl, inv, view);
@@ -139,7 +138,7 @@ public final class GuiManager {
 
         Map<String, String> base = new HashMap<>();
         base.put("rbazaar_category", cat.displayName());
-        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
+        Inventory inv = BazaarMenuHolder.create(tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
         tmpl.applyFiller(inv);
         placeFixedSlots(tmpl, inv, view, base);
         placeArrows(tmpl, inv, view);
@@ -187,7 +186,7 @@ public final class GuiManager {
 
         List<MarketItem> items = market.itemsInGroup(categoryId, groupId);
         Map<String, String> base = service.groupPlaceholders(cat, group, items);
-        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
+        Inventory inv = BazaarMenuHolder.create(tmpl.size(), Text.color(applyMap(tmpl.title(), base)));
         tmpl.applyFiller(inv);
         placeFixedSlots(tmpl, inv, view, base);
         placeArrows(tmpl, inv, view);
@@ -217,7 +216,7 @@ public final class GuiManager {
         OpenView view = new OpenView("bazaar_buy", item.categoryId(), itemId);
         Map<String, String> ph = service.placeholders(item, player);
 
-        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), ph)));
+        Inventory inv = BazaarMenuHolder.create(tmpl.size(), Text.color(applyMap(tmpl.title(), ph)));
         tmpl.applyFiller(inv);
         placeFixedSlots(tmpl, inv, view, ph);
 
@@ -235,7 +234,7 @@ public final class GuiManager {
         OpenView view = new OpenView("bazaar_product", item.categoryId(), itemId);
         Map<String, String> ph = service.placeholders(item, player);
 
-        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(applyMap(tmpl.title(), ph)));
+        Inventory inv = BazaarMenuHolder.create(tmpl.size(), Text.color(applyMap(tmpl.title(), ph)));
         tmpl.applyFiller(inv);
         placeFixedSlots(tmpl, inv, view, ph);
 
@@ -257,7 +256,7 @@ public final class GuiManager {
             return;
         }
         OpenView view = new OpenView("bazaar_trends", null, null);
-        Inventory inv = Bukkit.createInventory(player, tmpl.size(), Text.color(tmpl.title()));
+        Inventory inv = BazaarMenuHolder.create(tmpl.size(), Text.color(tmpl.title()));
         tmpl.applyFiller(inv);
         placeFixedSlots(tmpl, inv, view, Map.of());
         placeCategoryRail(tmpl, inv, view, null);
