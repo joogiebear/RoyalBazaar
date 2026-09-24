@@ -15,12 +15,12 @@ import java.util.logging.Level;
 
 /**
  * Wraps {@code config.yml} plus the {@code categories/} folder. On first run the default config and
- * a couple of example category files are written out; thereafter everything is user-editable and
+ * the bundled category files are written out; thereafter everything is user-editable and
  * hot-reloadable via {@code /bazaar reload}.
  */
 public final class PluginConfig {
 
-    private static final String[] DEFAULT_CATEGORIES = {"farming.yml", "mining.yml"};
+    private static final String[] DEFAULT_CATEGORIES = {"farming.yml", "mining.yml", "combat.yml", "oddities.yml", "woods_fishes.yml"};
 
     private final JavaPlugin plugin;
 
@@ -57,7 +57,6 @@ public final class PluginConfig {
         return plugin.getConfig().getDouble("engine.trend-ema-alpha", 0.2);
     }
 
-    /** What to do when a buy can't fully fit in the player's inventory: refund | drop | partial. */
     /**
      * Category that {@code /bazaar} opens directly. Null falls back to the first configured category,
      * since the category rail is the navigation and there is no separate landing menu.
@@ -67,6 +66,17 @@ public final class PluginConfig {
         return id == null || id.isBlank() ? null : id;
     }
 
+    /** Keep items EcoShop also trades inside EcoShop's buy/sell bracket (see CategoryConfig). */
+    public boolean npcArbitrageGuard() {
+        return plugin.getConfig().getBoolean("trading.npc-arbitrage-guard", true);
+    }
+
+    /** Largest quantity one buy may request. 0 or less means no limit. */
+    public long maxOrder() {
+        return plugin.getConfig().getLong("trading.max-order", 2304L);
+    }
+
+    /** What to do when a buy can't fully fit in the player's inventory: refund | drop | partial. */
     public String inventoryFullPolicy() {
         return plugin.getConfig().getString("trading.inventory-full", "refund").toLowerCase();
     }
@@ -90,7 +100,7 @@ public final class PluginConfig {
         for (File file : files) {
             String id = file.getName().substring(0, file.getName().length() - 4);
             YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
-            out.add(CategoryConfig.load(id, cfg, plugin.getLogger()));
+            out.add(CategoryConfig.load(id, cfg, plugin.getLogger(), npcArbitrageGuard()));
         }
         out.sort((a, b) -> Integer.compare(a.slot(), b.slot()));
         return out;

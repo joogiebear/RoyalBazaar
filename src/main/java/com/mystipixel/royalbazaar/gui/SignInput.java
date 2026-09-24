@@ -101,31 +101,28 @@ public final class SignInput implements Listener {
     }
 
     /**
-     * Where to put the throwaway sign: the player's feet, else the block at their head. Putting the
-     * original back only restores block data, not a block entity's contents, so a block with one (a
-     * sign's text, a banner's patterns) is never borrowed. Nor is a block another player's prompt is
-     * already using, since its "original" would then be that prompt's sign. Air is preferred, so
-     * nothing visible changes. {@code null} if neither spot will do.
+     * Where to put the throwaway sign: the first empty spot among the player's feet, head and the
+     * block above. Only air or plain water is borrowed: a ladder, vine or scaffolding the player is
+     * standing in would be pulled out from under them, half of a door or tall plant can be orphaned,
+     * and none of it would pass through protection plugins, since no place event fires. Nor is a spot
+     * another player's prompt is already using, since its "original" would then be that prompt's
+     * sign. {@code null} if none will do.
      */
     private Block signSpot(Player player) {
         Block feet = player.getLocation().getBlock();
         Block head = feet.getRelative(org.bukkit.block.BlockFace.UP);
-        Block fallback = null;
-        for (Block candidate : List.of(feet, head)) {
+        Block above = head.getRelative(org.bukkit.block.BlockFace.UP);
+        for (Block candidate : List.of(feet, head, above)) {
             if (pending.containsKey(candidate.getLocation())
                     || candidate.getY() < candidate.getWorld().getMinHeight()
-                    || candidate.getY() >= candidate.getWorld().getMaxHeight()
-                    || candidate.getState(false) instanceof org.bukkit.block.TileState) {
+                    || candidate.getY() >= candidate.getWorld().getMaxHeight()) {
                 continue;
             }
-            if (candidate.getType().isAir()) {
+            if (candidate.getType().isAir() || candidate.getType() == Material.WATER) {
                 return candidate;
             }
-            if (fallback == null) {
-                fallback = candidate;
-            }
         }
-        return fallback;
+        return null;
     }
 
     /**
@@ -188,11 +185,15 @@ public final class SignInput implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onSignChange(SignChangeEvent event) {
         Location loc = event.getBlock().getLocation();
-        Pending p = pending.remove(loc);
+        Pending p = pending.get(loc);
         if (p == null) {
             return;
         }
+        // Our sign either way, so never let the edit through; but only its owner's answer counts.
         event.setCancelled(true);
+        if (!event.getPlayer().getUniqueId().equals(p.player()) || !pending.remove(loc, p)) {
+            return;
+        }
         String input = PlainTextComponentSerializer.plainText().serialize(event.line(0)).trim();
         plugin.getLogger().fine("[sign-input] received from " + p.player() + ": '" + input + "'");
         Bukkit.getScheduler().runTask(plugin, () -> {

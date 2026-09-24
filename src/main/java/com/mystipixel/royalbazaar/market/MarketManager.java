@@ -5,9 +5,13 @@ import com.mystipixel.royalbazaar.hooks.EcoShopHook;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -32,29 +36,70 @@ public final class MarketManager {
         this.logger = logger;
     }
 
-    /** (Re)load categories + items from the loaded {@link CategoryConfig} list. Keeps live state. */
-    public void load(List<CategoryConfig> loaded, double emaAlpha, EcoShopHook shop) {
+    /**
+     * (Re)load categories + items from the loaded {@link CategoryConfig} list. Items that already
+     * existed keep their live state (see {@link MarketItem#carryOver}); the ids returned are the ones
+     * that did not, which the caller seeds from the database.
+     */
+    public Set<String> load(List<CategoryConfig> loaded, double emaAlpha, EcoShopHook shop) {
         this.emaAlpha = emaAlpha;
-        // Preserve current mids across a reload so a soft /bazaar reload doesn't reset the market.
         Map<String, MarketItem> previous = new LinkedHashMap<>(byId);
         byId.clear();
         categories.clear();
 
+        Set<String> added = new HashSet<>();
+        Map<String, String> ownerByKey = new HashMap<>();
         for (CategoryConfig cat : loaded) {
             categories.put(cat.id(), cat);
             for (MarketItem fresh : cat.buildItems(shop)) {
+                // "wheat" and "minecraft:wheat" are the same physical item. Two listings of it would be
+                // two independent prices, which players can arbitrage by buying one and selling the other.
+                String key = canonical(fresh.id());
+                String owner = ownerByKey.putIfAbsent(key, cat.id());
+                if (owner != null) {
+                    logger.warning("[category " + cat.id() + "] item '" + fresh.id() + "' is already listed in"
+                            + " category '" + owner + "' — skipping the duplicate.");
+                    continue;
+                }
                 MarketItem old = previous.get(fresh.id());
                 if (old != null) {
-                    fresh.loadState(old.mid(), old.midYesterday(), old.updatedAt());
+                    fresh.carryOver(old);
+                } else {
+                    added.add(fresh.id());
                 }
                 byId.put(fresh.id(), fresh);
             }
         }
         logger.info("Loaded " + categories.size() + " bazaar categories, " + byId.size() + " items.");
+        return added;
+    }
+
+    /** One key per physical item: lowercased, with bare vanilla ids namespaced to {@code minecraft:}. */
+    static String canonical(String id) {
+        String lower = id.trim().toLowerCase(Locale.ROOT);
+        return lower.contains(":") ? lower : "minecraft:" + lower;
     }
 
     public MarketItem get(String id) {
         return id == null ? null : byId.get(id);
+    }
+
+    /**
+     * {@link #get}, but forgiving of how a person types an id: case, and a missing {@code minecraft:}
+     * namespace ({@code /bazaar price diamond}).
+     */
+    public MarketItem lookup(String typed) {
+        MarketItem exact = get(typed);
+        if (exact != null || typed == null) {
+            return exact;
+        }
+        String key = canonical(typed);
+        for (MarketItem item : byId.values()) {
+            if (canonical(item.id()).equals(key)) {
+                return item;
+            }
+        }
+        return null;
     }
 
     public Collection<MarketItem> all() {
@@ -123,13 +168,6 @@ public final class MarketManager {
                 item.updateEma(emaAlpha);
             }
             item.volume().tick();
-        }
-    }
-
-    /** Snapshot the current mid as "yesterday" for %change_24h% — call on the 24h schedule. */
-    public void rollDaily() {
-        for (MarketItem item : byId.values()) {
-            item.rollDaily();
         }
     }
 

@@ -198,7 +198,7 @@ public final class EffectDispatcher {
             }
             long amount;
             try {
-                amount = Long.parseLong(typed.trim());
+                amount = Long.parseLong(typed.replace(",", "").trim());
             } catch (NumberFormatException bad) {
                 messages.send(player, "buy.bad-amount", "&cThat isn't a number.");
                 gui.openBuy(player, itemId);

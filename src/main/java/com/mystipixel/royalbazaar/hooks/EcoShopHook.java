@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -26,6 +27,9 @@ public final class EcoShopHook {
     /** NPC prices for one item; either may be null if EcoShop only defines one side. */
     public record ShopPrice(Double buy, Double sell) {
     }
+
+    /** EcoShop price types that mean the Vault economy. */
+    private static final Set<String> COIN_TYPES = Set.of("coins", "coin", "money", "vault");
 
     private final boolean present;
     private final Map<String, ShopPrice> byId = new HashMap<>();
@@ -99,9 +103,16 @@ public final class EcoShopHook {
         }
     }
 
-    /** Pull {@code value} out of a {@code buy:}/{@code sell:} sub-map. */
+    /**
+     * Pull {@code value} out of a {@code buy:}/{@code sell:} sub-map. A price in anything but coins
+     * (XP, levels, an EcoBits currency) says nothing about a Vault price, so it is ignored.
+     */
     private Double valueOf(Object side) {
         if (side instanceof Map<?, ?> m) {
+            Object type = m.get("type");
+            if (type != null && !COIN_TYPES.contains(String.valueOf(type).toLowerCase(Locale.ROOT))) {
+                return null;
+            }
             Object v = m.get("value");
             if (v instanceof Number n) {
                 return n.doubleValue();

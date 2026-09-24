@@ -50,7 +50,8 @@ public final class MarketItem {
      */
     private int pinnedSlot = -1;
 
-    private final VolumeWindow volume = new VolumeWindow();
+    // Not final: a reload hands the live window to the item's replacement (see carryOver).
+    private VolumeWindow volume = new VolumeWindow();
 
     public MarketItem(String id, String categoryId, String groupId, String displayName, double basePrice,
                       double spread, double elasticity, double reversionRate, double floor, double ceiling) {
@@ -64,10 +65,11 @@ public final class MarketItem {
         this.reversionRate = reversionRate;
         this.floor = floor;
         this.ceiling = ceiling;
-        // Seed defaults; overwritten by loadState() if a persisted row exists.
-        this.mid = basePrice;
-        this.midYesterday = basePrice;
-        this.emaShort = basePrice;
+        // Seed defaults; overwritten by loadState() if a persisted row exists. Clamped because the
+        // floor/ceiling can sit above or below base (EcoShop bracketing, custom *_pct values).
+        this.mid = PricingEngine.clamp(basePrice, floor, ceiling);
+        this.midYesterday = this.mid;
+        this.emaShort = this.mid;
     }
 
     /** Restore persisted state on startup. */
@@ -77,6 +79,25 @@ public final class MarketItem {
         this.emaShort = this.mid;
         this.updatedAt = updatedAt;
         this.dirty = false;
+    }
+
+    /**
+     * Take over the live state of the item this one replaces on {@code /bazaar reload}: price, trend,
+     * volume, week stats, pending write and an admin freeze. Reading it back from the database instead
+     * rolled prices back to the last flush and silently lifted freezes. The mid is re-clamped, since
+     * the reload may have moved the floor or ceiling, and marked dirty if that moved it.
+     */
+    public void carryOver(MarketItem old) {
+        this.mid = PricingEngine.clamp(old.mid, floor, ceiling);
+        this.midYesterday = old.midYesterday;
+        this.emaShort = old.emaShort;
+        this.updatedAt = old.updatedAt;
+        this.dirty = old.dirty || this.mid != old.mid;
+        this.frozen = old.frozen;
+        this.midWeekAgo = old.midWeekAgo;
+        this.weekLow = old.weekLow;
+        this.weekHigh = old.weekHigh;
+        this.volume = old.volume;
     }
 
     // ---- config accessors ----
@@ -128,9 +149,14 @@ public final class MarketItem {
         this.emaShort = alpha * mid + (1 - alpha) * emaShort;
     }
 
-    public void rollDaily() {
-        this.midYesterday = mid;
-        this.dirty = true;
+    /**
+     * Apply the 24h baseline taken from price history. Main thread. Not marked dirty: the baseline is
+     * derived from rb_history, so persisting it on its own would only add writes.
+     */
+    public void setMidYesterday(double midYesterday) {
+        if (midYesterday > 0) {
+            this.midYesterday = midYesterday;
+        }
     }
 
     public void clearDirty() { this.dirty = false; }

@@ -215,9 +215,15 @@ brackets each item with a `buy.value` (what a player pays the NPC — the natura
 Each option falls back to its `*_pct` default if EcoShop is absent or doesn't list the item, so
 mixing anchored and explicit items in one category is fine.
 
+With `trading.npc-arbitrage-guard: true` (the default), any item EcoShop also lists is kept inside
+EcoShop's bracket even without `npc_floor`/`npc_ceiling`, spread included: the bazaar's buy price
+never falls below what the NPC pays, and its sell price never rises above what the NPC charges.
+Outside that range a player could buy from one shop and sell to the other at a profit. EcoShop
+prices in anything other than coins are ignored.
+
 > **Tuning note:** anchoring `base_price` to EcoShop's *buy* value puts the item at the **top** of its
-> range, and with `npc_ceiling: true` the mid can then only fall, never rise. If you want headroom,
-> either drop `npc_ceiling` or anchor the base nearer the midpoint of EcoShop's buy/sell.
+> range, so the mid can then barely rise. If you want movement both ways, anchor the base nearer
+> the midpoint of EcoShop's buy/sell.
 
 ---
 
@@ -352,6 +358,14 @@ Java 21, Maven. Versioning is `year.week.revision` (e.g. `2026.28.0`), matching 
 
 - **Paper 26.2 requires Java 25** to run (the plugin targets Java 21 bytecode).
 - **EcoItems' namespace is `ecoitems:` (plural)**, not `ecoitem:`.
+- **Vanilla listings only take plain items.** Selling `minecraft:diamond_sword` takes a plain sword,
+  never one that is enchanted, damaged, renamed, trimmed or carries another plugin's data, so
+  sell-all can't sell a Sharpness V sword or a Mending book at the plain price.
+- **Broken item tuning is refused.** An item with non-positive `elasticity`, a `spread` outside
+  [0, 1), a `reversion_rate` outside [0, 1] or a floor at or above its ceiling is skipped with a
+  warning, as is a second listing of the same item (`wheat` and `minecraft:wheat` count as one).
+- **`/bazaar reload` keeps the live market.** Prices, freezes, 24h volume and unsaved changes carry
+  over; only newly listed items are read from storage.
 - **`base_price: auto` needs EcoShop.** If EcoShop doesn't list the item, the item is skipped with a
   warning — it does not silently get a made-up price.
 - The plugin **waits** for a Vault economy provider instead of disabling when one isn't registered at

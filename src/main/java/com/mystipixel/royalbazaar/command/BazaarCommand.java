@@ -34,6 +34,11 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        // Every way into the bazaar goes through this command, so this is where royalbazaar.use bites.
+        if (!sender.hasPermission("royalbazaar.use") && !sender.hasPermission("royalbazaar.admin")) {
+            plugin.messages().send(sender, "no-permission", "&cNo permission.");
+            return true;
+        }
         if (args.length == 0) {
             if (sender instanceof Player player) {
                 gui.openDefault(player);
@@ -56,7 +61,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
                     plugin.messages().send(sender, "price-usage", "&cUsage: /bazaar price <item>");
                     return true;
                 }
-                MarketItem item = market.get(args[1]);
+                MarketItem item = market.lookup(args[1]);
                 if (item == null) {
                     plugin.messages().send(sender, "unknown-item", "&cUnknown item: {item}",
                             java.util.Map.of("item", args[1]));
@@ -137,7 +142,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
                     "&cUsage: /bazaar admin <set|freeze|unfreeze|reset> <item> [mid]");
             return;
         }
-        MarketItem item = market.get(args[2]);
+        MarketItem item = market.lookup(args[2]);
         if (item == null) {
             plugin.messages().send(sender, "unknown-item", "&cUnknown item: {item}",
                     java.util.Map.of("item", args[2]));
