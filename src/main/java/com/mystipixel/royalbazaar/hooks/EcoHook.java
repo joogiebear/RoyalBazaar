@@ -6,6 +6,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.BlockStateMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
+import org.bukkit.inventory.meta.ItemMeta;
 
 /**
  * Item resolution via the eco platform. A bazaar item id is an eco lookup key —
@@ -59,7 +64,7 @@ public final class EcoHook {
         }
         Material vanilla = vanillaMaterial(id);
         if (vanilla != null) {
-            if (stack.getType() != vanilla) {
+            if (stack.getType() != vanilla || !isPlain(stack)) {
                 return false;
             }
             // A custom eco item can sit on the same material (e.g. enchanted_wheat on WHEAT);
@@ -83,6 +88,33 @@ public final class EcoHook {
             }
         }
         return false;
+    }
+
+    /**
+     * True for a stack that is nothing more than its material: no name, lore, enchantments, stored
+     * enchantments, damage, trim, block contents or plugin data. A vanilla listing prices the plain
+     * item, so sell/sell-all must never take a Sharpness V sword, a Mending book, a half-broken elytra
+     * or another plugin's custom item (or a bazaar menu icon) at that price.
+     */
+    static boolean isPlain(ItemStack stack) {
+        if (!stack.hasItemMeta()) {
+            return true;
+        }
+        ItemMeta meta = stack.getItemMeta();
+        if (meta.hasDisplayName() || meta.hasItemName() || meta.hasLore() || meta.hasEnchants()
+                || meta.hasCustomModelData() || !meta.getPersistentDataContainer().isEmpty()) {
+            return false;
+        }
+        if (meta instanceof Damageable damageable && damageable.hasDamage()) {
+            return false;
+        }
+        if (meta instanceof EnchantmentStorageMeta storage && storage.hasStoredEnchants()) {
+            return false;
+        }
+        if (meta instanceof ArmorMeta armor && armor.hasTrim()) {
+            return false;
+        }
+        return !(meta instanceof BlockStateMeta blockState && blockState.hasBlockState());
     }
 
     /** Count how many matching units the player holds. */
