@@ -70,10 +70,21 @@ public final class BazaarService {
             return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.BUY, itemId,
                     "This item is temporarily frozen.");
         }
+        long maxOrder = config.maxOrder();
+        if (maxOrder > 0 && amount > maxOrder) {
+            return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId,
+                    "You can buy at most " + maxOrder + " at once.");
+        }
         // Items are handed over through int-sized stacks, so an order beyond int range would be paid
         // for in full but truncated in the (int) cast below. Clamp before pricing so the cost and the
         // delivery always describe the same quantity.
         amount = Math.min(amount, Integer.MAX_VALUE);
+        // An id that no longer resolves (eco item removed, material typo) can't be delivered.
+        ItemStack prototype = eco.resolve(itemId, 1);
+        if (prototype == null) {
+            return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.BUY, itemId,
+                    "This item is currently unavailable.");
+        }
 
         double cost = PricingEngine.buyCost(item, amount);
         if (!guard.allow(player, TradeSide.BUY, itemId, amount, cost)) {
@@ -84,7 +95,7 @@ public final class BazaarService {
         }
 
         // How many can actually fit? Policy decides what happens to the remainder.
-        int fits = spaceFor(player, itemId, (int) Math.min(amount, Integer.MAX_VALUE));
+        int fits = spaceFor(player, itemId, prototype.getMaxStackSize(), (int) amount);
         long fill = amount;
         if (fits < amount) {
             switch (config.inventoryFullPolicy()) {
@@ -105,7 +116,7 @@ public final class BazaarService {
             return TradeResult.fail(TradeResult.Status.INSUFFICIENT_FUNDS, TradeSide.BUY, itemId, "Payment failed.");
         }
 
-        giveItems(player, itemId, (int) fill);
+        giveItems(player, itemId, prototype.getMaxStackSize(), (int) fill);
         item.setMid(PricingEngine.midAfterBuy(item, fill));
         item.volume().recordBuy(fill);
         record(player, itemId, TradeSide.BUY, fill, item.mid(), finalCost);
@@ -195,7 +206,6 @@ public final class BazaarService {
 
     // ------------------------------------------------------------------ inventory helpers
 
-    /** Free capacity for this item across empty + partially-filled matching stacks. */
     /**
      * How many of an item a "fill my inventory" purchase should buy: as many as physically fit, capped by
      * what the player can actually pay for.
@@ -209,7 +219,15 @@ public final class BazaarService {
         if (item == null) {
             return 0;
         }
-        long capacity = spaceFor(player, itemId, Integer.MAX_VALUE);
+        ItemStack prototype = eco.resolve(itemId, 1);
+        if (prototype == null) {
+            return 0;
+        }
+        long capacity = spaceFor(player, itemId, prototype.getMaxStackSize(), Integer.MAX_VALUE);
+        long maxOrder = config.maxOrder();
+        if (maxOrder > 0) {
+            capacity = Math.min(capacity, maxOrder);
+        }
         if (capacity <= 0) {
             return 0;
         }
@@ -227,8 +245,8 @@ public final class BazaarService {
         return low;
     }
 
-    private int spaceFor(Player player, String itemId, int wanted) {
-        int max = eco.resolve(itemId, 1).getMaxStackSize();
+    /** Free capacity for this item across empty + partially-filled matching stacks. */
+    private int spaceFor(Player player, String itemId, int max, int wanted) {
         int space = 0;
         for (ItemStack stack : player.getInventory().getStorageContents()) {
             if (stack == null || stack.getType().isAir()) {
@@ -243,8 +261,7 @@ public final class BazaarService {
         return space;
     }
 
-    private void giveItems(Player player, String itemId, int amount) {
-        int max = eco.resolve(itemId, 1).getMaxStackSize();
+    private void giveItems(Player player, String itemId, int max, int amount) {
         int remaining = amount;
         while (remaining > 0) {
             int stackSize = Math.min(max, remaining);

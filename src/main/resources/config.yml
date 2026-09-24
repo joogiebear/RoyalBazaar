@@ -26,10 +26,18 @@ engine:
 
 trading:
   # What to do when a buy can't fully fit in the player's inventory:
-  #   refund  - cancel the overflow, only buy what fits, charge for what fit
-  #   partial - same as refund (buy what fits)
+  #   refund  - refuse the whole buy, charge nothing
+  #   partial - buy only what fits, charge for what fit
   #   drop    - buy the full amount, drop overflow at the player's feet
   inventory-full: refund
+  # Largest quantity a single buy may request (2304 = a full inventory of 64-stacks). Matters most
+  # with inventory-full: drop, where an unbounded order drops every overflow stack on the ground at
+  # once. 0 = no limit.
+  max-order: 2304
+  # Keep every item EcoShop also trades inside EcoShop's buy/sell range (spread included), even
+  # without npc_floor / npc_ceiling. Outside it, players can buy from one and sell to the other at a
+  # profit. Turn off only if the two shops deliberately disagree.
+  npc-arbitrage-guard: true
 
 storage:
   # SQLITE (default, single server) or MYSQL (shared across a network).

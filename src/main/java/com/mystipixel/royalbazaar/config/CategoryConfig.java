@@ -49,9 +49,11 @@ public final class CategoryConfig {
     private final List<Group> groups;
     private final ConfigurationSection itemsSection;
     private final Logger logger;
+    private final boolean npcArbitrageGuard;
 
     private CategoryConfig(String id, String displayName, String icon, int slot, Defaults defaults,
-                           List<Group> groups, ConfigurationSection itemsSection, Logger logger) {
+                           List<Group> groups, ConfigurationSection itemsSection, Logger logger,
+                           boolean npcArbitrageGuard) {
         this.id = id;
         this.displayName = displayName;
         this.icon = icon;
@@ -60,16 +62,18 @@ public final class CategoryConfig {
         this.groups = groups;
         this.itemsSection = itemsSection;
         this.logger = logger;
+        this.npcArbitrageGuard = npcArbitrageGuard;
     }
 
-    public static CategoryConfig load(String id, ConfigurationSection root, Logger logger) {
+    public static CategoryConfig load(String id, ConfigurationSection root, Logger logger,
+                                      boolean npcArbitrageGuard) {
         String display = root.getString("name", id);
         String icon = root.getString("icon", "minecraft:chest");
         int slot = root.getInt("slot", 0);
         Defaults defaults = Defaults.from(root.getConfigurationSection("defaults"));
         return new CategoryConfig(id, display, icon, slot, defaults,
                 loadGroups(root.getConfigurationSection("groups")),
-                root.getConfigurationSection("items"), logger);
+                root.getConfigurationSection("items"), logger, npcArbitrageGuard);
     }
 
     /** Declared order wins; ties fall back to config order, so an un-ordered groups: block stays stable. */
@@ -128,6 +132,15 @@ public final class CategoryConfig {
      *   <li>{@code npc_ceiling: true} → ceiling pinned to the EcoShop buy value</li>
      * </ul>
      * Each falls back to its {@code *_pct} default when EcoShop is absent or the item isn't listed.
+     *
+     * <p>With {@code trading.npc-arbitrage-guard} on, an item EcoShop also trades is additionally kept
+     * inside EcoShop's bracket, spread included, whatever the {@code npc_*} flags say: the bazaar's buy
+     * price never drops below what the NPC pays, and its sell price never rises above what the NPC
+     * charges. Outside that bracket a player could buy from one and sell to the other at a profit.
+     *
+     * <p>An item whose tuning can't produce a sane market (non-positive elasticity, a spread outside
+     * [0, 1), a reversion rate outside [0, 1], a floor at or above the ceiling) is skipped with a
+     * warning rather than loaded: several of those invert the price curve into a money printer.
      */
     public List<MarketItem> buildItems(EcoShopHook shop) {
         List<MarketItem> out = new ArrayList<>();
@@ -162,21 +175,82 @@ public final class CategoryConfig {
                 ceiling = base * defaults.ceilingPct();
             }
 
+            double spread = is.getDouble("spread", defaults.spread());
+            double elasticity = is.getDouble("elasticity", defaults.elasticity());
+            double reversion = is.getDouble("reversion_rate", defaults.reversionRate());
+            if (npcArbitrageGuard) {
+                double[] bracketed = bracket(shop, itemId, spread, floor, ceiling, key);
+                floor = bracketed[0];
+                ceiling = bracketed[1];
+            }
+            String problem = tuningProblem(spread, elasticity, reversion, floor, ceiling);
+            if (problem != null) {
+                logger.warning("[category " + id + "] item '" + key + "' " + problem + " — skipping.");
+                continue;
+            }
+
             MarketItem item = new MarketItem(
                     itemId,
                     id,
                     resolveGroup(is, key),
                     is.getString("display", ""),
                     base,
-                    is.getDouble("spread", defaults.spread()),
-                    is.getDouble("elasticity", defaults.elasticity()),
-                    is.getDouble("reversion_rate", defaults.reversionRate()),
+                    spread,
+                    elasticity,
+                    reversion,
                     floor,
                     ceiling);
             item.setPinnedSlot(slotOf(is));
             out.add(item);
         }
         return out;
+    }
+
+    /**
+     * Narrow {@code [floor, ceiling]} so that, at every mid the item can reach, the bazaar's buy price
+     * ({@code mid·(1+spread/2)}) is at least EcoShop's sell value and its sell price
+     * ({@code mid·(1−spread/2)}) at most EcoShop's buy value. Leaves the range alone, with a warning,
+     * if EcoShop's own prices leave no room for it.
+     */
+    private double[] bracket(EcoShopHook shop, String itemId, double spread, double floor, double ceiling,
+                             String key) {
+        if (spread < 0 || spread >= 1) {
+            return new double[]{floor, ceiling};   // tuningProblem reports it
+        }
+        double lo = floor;
+        double hi = ceiling;
+        Double npcSell = shop.sellValue(itemId);
+        Double npcBuy = shop.buyValue(itemId);
+        if (npcSell != null && npcSell > 0) {
+            lo = Math.max(lo, npcSell / (1.0 + spread / 2.0));
+        }
+        if (npcBuy != null && npcBuy > 0) {
+            hi = Math.min(hi, npcBuy / (1.0 - spread / 2.0));
+        }
+        if (lo >= hi) {
+            logger.warning("[category " + id + "] item '" + key + "': EcoShop's buy/sell prices leave no"
+                    + " arbitrage-free range for it, so it is not bracketed. Check its EcoShop entry.");
+            return new double[]{floor, ceiling};
+        }
+        return new double[]{lo, hi};
+    }
+
+    /** Why this tuning can't make a working market, or null if it can. */
+    static String tuningProblem(double spread, double elasticity, double reversion, double floor,
+                                double ceiling) {
+        if (!(elasticity > 0) || Double.isInfinite(elasticity)) {
+            return "has elasticity " + elasticity + "; it must be a positive number";
+        }
+        if (!(spread >= 0 && spread < 1)) {
+            return "has spread " + spread + "; it must be a fraction in [0, 1)";
+        }
+        if (!(reversion >= 0 && reversion <= 1)) {
+            return "has reversion_rate " + reversion + "; it must be a fraction in [0, 1]";
+        }
+        if (!(floor >= 0) || !(floor < ceiling) || Double.isInfinite(ceiling)) {
+            return "has floor " + floor + " and ceiling " + ceiling + "; it needs 0 <= floor < ceiling";
+        }
+        return null;
     }
 
     /**

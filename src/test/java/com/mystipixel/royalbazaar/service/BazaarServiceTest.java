@@ -34,6 +34,7 @@ class BazaarServiceTest {
     private final Player player = mock(Player.class);
     private final PlayerInventory inventory = mock(PlayerInventory.class);
     private final BukkitScheduler scheduler = mock(BukkitScheduler.class);
+    private final PluginConfig config = mock(PluginConfig.class);
     private final AtomicReference<ItemStack[]> storage = new AtomicReference<>();
     private final ItemMeta customMetadata = mock(ItemMeta.class);
     private final MarketItem item = new MarketItem("ecoitem:test", "test", null, "Custom item",
@@ -42,7 +43,7 @@ class BazaarServiceTest {
 
     @BeforeEach
     void setup() {
-        service = new BazaarService(plugin, market, db, vault, eco, guard, mock(PluginConfig.class));
+        service = new BazaarService(plugin, market, db, vault, eco, guard, config);
         when(market.get(item.id())).thenReturn(item);
         when(player.getInventory()).thenReturn(inventory);
         when(player.getUniqueId()).thenReturn(UUID.randomUUID());
@@ -196,5 +197,25 @@ class BazaarServiceTest {
         verifyNoInteractions(vault);
         verify(inventory, never()).setStorageContents(any());
         assertNoSaleRecorded();
+    }
+
+    @Test
+    void buyOverTheOrderCapIsRefusedBeforeAnyMoneyMoves() {
+        when(config.maxOrder()).thenReturn(64L);
+        TradeResult result = service.buy(player, item.id(), 65);
+        assertEquals(TradeResult.Status.ERROR, result.status());
+        verifyNoInteractions(vault);
+        assertEquals(100, item.mid());
+    }
+
+    @Test
+    void buyOfAnItemThatNoLongerResolvesIsRefusedNotThrown() {
+        when(guard.allow(any(), any(), anyString(), anyLong(), anyDouble())).thenReturn(true);
+        when(eco.resolve(item.id(), 1)).thenReturn(null);
+        TradeResult result = service.buy(player, item.id(), 5);
+        assertEquals(TradeResult.Status.DISABLED, result.status());
+        verifyNoInteractions(vault);
+        assertEquals(100, item.mid());
+        assertEquals(0, service.fillAmount(player, item.id()));
     }
 }
