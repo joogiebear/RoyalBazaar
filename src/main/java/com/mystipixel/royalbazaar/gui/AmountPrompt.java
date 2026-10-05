@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The "custom amount" flow: ask for a number on a throwaway sign — the same input the search box and
- * the instant-buy screen already use — then run the trade and reopen the product page.
+ * The "custom amount" flow: ask for a number in a text-input dialog — the same input the search box
+ * and the instant-buy screen already use — then run the trade and reopen the product page.
  *
- * <p>This used to prompt in chat. A sign is better on every axis the suite cares about: the amount
+ * <p>This used to prompt in chat. A dialog is better on every axis the suite cares about: the amount
  * stays private instead of appearing in public chat, the player is never stranded staring at a chat
- * box with no menu, and {@link SignInput}'s callback arrives on the main thread so the trade runs
+ * box with no menu, and {@link TextInput}'s callback arrives on the main thread so the trade runs
  * inline with no scheduling hop.
  */
 public final class AmountPrompt {
@@ -22,27 +22,27 @@ public final class AmountPrompt {
     private final BazaarService service;
     private final GuiManager gui;
     private final MessageManager messages;
-    private final SignInput signInput;
+    private final TextInput textInput;
 
-    public AmountPrompt(BazaarService service, GuiManager gui, MessageManager messages, SignInput signInput) {
+    public AmountPrompt(BazaarService service, GuiManager gui, MessageManager messages, TextInput textInput) {
         this.service = service;
         this.gui = gui;
         this.messages = messages;
-        this.signInput = signInput;
+        this.textInput = textInput;
     }
 
     public void begin(Player player, String itemId, boolean buy) {
         if (itemId == null) {
             return;
         }
-        signInput.request(player,
+        textInput.request(player,
                 List.of("&8^^^^^^^^^^^^^^^", buy ? "&8Amount to buy" : "&8Amount to sell", "&8(or 'cancel')"),
                 typed -> finish(player, itemId, buy, typed));
     }
 
-    /** Runs on the main thread with what came off the sign (null when no answer is coming). */
+    /** Runs on the main thread with what was typed (blank when cancelled). */
     private void finish(Player player, String itemId, boolean buy, String typed) {
-        if (typed == null && !SignInput.showingOwnInventory(player)) {
+        if (typed == null && !TextInput.showingOwnInventory(player)) {
             return;                               // another plugin's menu took over — leave it be
         }
         if (typed == null || typed.isBlank() || typed.equalsIgnoreCase("cancel")) {

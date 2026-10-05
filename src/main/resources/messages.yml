@@ -22,3 +22,8 @@ trade:
   sold: "&aSold &f{amount} &afor &e${total}"
   done: "&aDone: &f{amount} &7for &e${total}"
   failed: "&c{reason}"
+
+# Buttons of the text-input dialog (search, custom amounts).
+input:
+  confirm: "&aDone"
+  cancel: "&cCancel"

@@ -28,10 +28,10 @@ public final class EffectDispatcher {
     private final AmountPrompt prompt;
     private final MessageManager messages;
     private final MarketManager market;
-    private final SignInput signInput;
+    private final TextInput textInput;
 
-    public EffectDispatcher(GuiManager gui, BazaarService service, AmountPrompt prompt, MessageManager messages, MarketManager market, SignInput signInput) {
-        this.signInput = signInput;
+    public EffectDispatcher(GuiManager gui, BazaarService service, AmountPrompt prompt, MessageManager messages, MarketManager market, TextInput textInput) {
+        this.textInput = textInput;
         this.market = market;
         this.gui = gui;
         this.service = service;
@@ -183,13 +183,13 @@ public final class EffectDispatcher {
         return view == null ? null : view.itemId();
     }
 
-    /** Ask for a buy quantity on a sign, then buy that many. */
+    /** Ask for a buy quantity in a dialog, then buy that many. */
     private void askBuyAmount(Player player, String itemId) {
         if (itemId == null) {
             return;
         }
-        signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8How many", "&8to buy?"), typed -> {
-            if (typed == null && !SignInput.showingOwnInventory(player)) {
+        textInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8How many", "&8to buy?"), typed -> {
+            if (typed == null && !TextInput.showingOwnInventory(player)) {
                 return;                             // another plugin's menu took over — leave it be
             }
             if (typed == null || typed.isBlank()) {
@@ -251,14 +251,14 @@ public final class EffectDispatcher {
         gui.openDefault(player);
     }
 
-    /** Ask for a search term on a sign, then show the results. */
+    /** Ask for a search term in a dialog, then show the results. */
     private void beginSearch(Player player) {
-        signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8Type an item", "&8name to search"), query -> {
-            if (query == null && !SignInput.showingOwnInventory(player)) {
+        textInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8Type an item", "&8name to search"), query -> {
+            if (query == null && !TextInput.showingOwnInventory(player)) {
                 return;                       // another plugin's menu took over — leave it be
             }
             if (query == null || query.isBlank()) {
-                gui.openDefault(player);      // cancelled or the sign wouldn't open — put them back
+                gui.openDefault(player);      // cancelled — put them back
                 return;
             }
             gui.openSearch(player, query, 1);

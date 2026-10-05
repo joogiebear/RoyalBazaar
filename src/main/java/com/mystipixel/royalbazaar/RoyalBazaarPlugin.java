@@ -7,7 +7,7 @@ import com.mystipixel.royalbazaar.gui.AmountPrompt;
 import com.mystipixel.royalbazaar.gui.BazaarGuiListener;
 import com.mystipixel.royalbazaar.gui.EffectDispatcher;
 import com.mystipixel.royalbazaar.gui.GuiManager;
-import com.mystipixel.royalbazaar.gui.SignInput;
+import com.mystipixel.royalbazaar.gui.TextInput;
 import com.mystipixel.royalbazaar.gui.menu.MenuManager;
 import com.mystipixel.royalbazaar.gui.menu.MenuTemplate;
 import com.mystipixel.royalbazaar.hooks.BazaarPlaceholderExpansion;
@@ -58,7 +58,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     private BazaarService service;
     private MenuManager menus;
     private GuiManager gui;
-    private SignInput signInput;
+    private TextInput textInput;
 
     private BukkitTask tickTask;
     private BukkitTask flushTask;
@@ -137,11 +137,11 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         this.menus = new MenuManager(this);
         this.gui = new GuiManager(menus, market, service, eco);
 
-        this.signInput = new SignInput(this);
-        getServer().getPluginManager().registerEvents(signInput, this);
-        // Sign-backed, so it no longer listens to chat and needs no event registration of its own.
-        AmountPrompt prompt = new AmountPrompt(service, gui, messages, signInput);
-        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages, market, signInput);
+        this.textInput = new TextInput(this, () -> messages.get("input.confirm", "&aDone"),
+                () -> messages.get("input.cancel", "&cCancel"));
+        // Dialog-backed: no listener, nothing placed in the world.
+        AmountPrompt prompt = new AmountPrompt(service, gui, messages, textInput);
+        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages, market, textInput);
         getServer().getPluginManager().registerEvents(new BazaarGuiListener(gui, dispatcher), this);
 
         BazaarCommand command = new BazaarCommand(this, gui, market, service);
@@ -243,9 +243,6 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
             if (BazaarMenuHolder.isMenu(player.getOpenInventory().getTopInventory())) {
                 player.closeInventory();
             }
-        }
-        if (signInput != null) {
-            signInput.shutdown();
         }
         if (placeholderExpansion != null) {
             placeholderExpansion.unregister();
