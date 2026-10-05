@@ -132,7 +132,7 @@ public final class EffectDispatcher {
                             "total", String.format("%,.2f", r.total())));
         } else {
             messages.send(player, "trade.failed", "&c{reason}",
-                    java.util.Map.of("reason", r.message() == null ? "Trade failed." : r.message()));
+                    java.util.Map.of("reason", r.message() == null ? messages.get("trade.reasons.generic", "Trade failed.") : r.message()));
         }
     }
 
@@ -155,24 +155,26 @@ public final class EffectDispatcher {
         String what;
         if (groupId != null && categoryId != null && !"all".equalsIgnoreCase(scope)) {
             items = market.itemsInGroup(categoryId, groupId);
-            what = "this group";
+            what = messages.get("sell-all.scope-group", "this group");
         } else {
             items = market.all();
-            what = "your inventory";
+            what = messages.get("sell-all.scope-inventory", "your inventory");
         }
 
         BazaarService.SellAllResult result = service.sellAll(player, items);
         if (result.soldNothing()) {
-            messages.send(player, "sell-all.nothing",
-                    "&eNothing in " + what + " could be sold here.");
+            messages.send(player, "sell-all.nothing", "&eNothing in {scope} could be sold here.",
+                    java.util.Map.of("scope", what));
         } else {
             messages.send(player, "sell-all.done",
-                    "&aSold &f" + result.units() + "&a from &f" + result.distinctItems()
-                            + "&a item type(s) for &6" + String.format("%,.2f", result.proceeds()) + "&a.");
+                    "&aSold &f{units}&a from &f{items}&a item type(s) for &6{proceeds}&a.",
+                    java.util.Map.of("units", String.valueOf(result.units()),
+                            "items", String.valueOf(result.distinctItems()),
+                            "proceeds", String.format("%,.2f", result.proceeds())));
         }
         if (result.blocked() > 0) {
-            messages.send(player, "sell-all.blocked",
-                    "&c" + result.blocked() + " item type(s) were blocked and not sold.");
+            messages.send(player, "sell-all.blocked", "&c{blocked} item type(s) were blocked and not sold.",
+                    java.util.Map.of("blocked", String.valueOf(result.blocked())));
         }
         gui.refresh(player);
     }
@@ -188,7 +190,7 @@ public final class EffectDispatcher {
         if (itemId == null) {
             return;
         }
-        signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8How many", "&8to buy?"), typed -> {
+        signInput.request(player, messages.lines("sign.buy-amount", List.of("&8^^^^^^^^^^^^^^^", "&8How many", "&8to buy?")), typed -> {
             if (typed == null && !SignInput.showingOwnInventory(player)) {
                 return;                             // another plugin's menu took over — leave it be
             }
@@ -205,7 +207,7 @@ public final class EffectDispatcher {
                 return;
             }
             if (amount <= 0) {
-                messages.send(player, "buy.bad-amount", "&cEnter an amount above zero.");
+                messages.send(player, "buy.amount-positive", "&cEnter an amount above zero.");
                 gui.openBuy(player, itemId);
                 return;
             }
@@ -253,7 +255,7 @@ public final class EffectDispatcher {
 
     /** Ask for a search term on a sign, then show the results. */
     private void beginSearch(Player player) {
-        signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8Type an item", "&8name to search"), query -> {
+        signInput.request(player, messages.lines("sign.search", List.of("&8^^^^^^^^^^^^^^^", "&8Type an item", "&8name to search")), query -> {
             if (query == null && !SignInput.showingOwnInventory(player)) {
                 return;                       // another plugin's menu took over — leave it be
             }

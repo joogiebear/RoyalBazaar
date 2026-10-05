@@ -36,7 +36,8 @@ public final class AmountPrompt {
             return;
         }
         signInput.request(player,
-                List.of("&8^^^^^^^^^^^^^^^", buy ? "&8Amount to buy" : "&8Amount to sell", "&8(or 'cancel')"),
+                buy ? messages.lines("sign.amount-buy", List.of("&8^^^^^^^^^^^^^^^", "&8Amount to buy", "&8(or 'cancel')"))
+                    : messages.lines("sign.amount-sell", List.of("&8^^^^^^^^^^^^^^^", "&8Amount to sell", "&8(or 'cancel')")),
                 typed -> finish(player, itemId, buy, typed));
     }
 
@@ -69,7 +70,7 @@ public final class AmountPrompt {
                             "total", String.format("%,.2f", r.total())));
         } else {
             messages.send(player, "trade.failed", "&c{reason}",
-                    Map.of("reason", r.message() == null ? "Trade failed." : r.message()));
+                    Map.of("reason", r.message() == null ? messages.get("trade.reasons.generic", "Trade failed.") : r.message()));
         }
         gui.openProduct(player, itemId);
     }

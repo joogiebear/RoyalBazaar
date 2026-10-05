@@ -22,3 +22,60 @@ trade:
   sold: "&aSold &f{amount} &afor &e${total}"
   done: "&aDone: &f{amount} &7for &e${total}"
   failed: "&c{reason}"
+  # Why a trade was refused, shown through {reason} above.
+  reasons:
+    generic: "Trade failed."
+    unknown-item: "Unknown item."
+    invalid-amount: "Invalid amount."
+    max-order: "You can buy at most {max} at once."
+    frozen: "This item is temporarily frozen."
+    unavailable: "This item is currently unavailable."
+    blocked: "Trade blocked."
+    not-enough-money: "Not enough money."
+    not-enough-space: "Not enough inventory space."
+    inventory-full: "Inventory full."
+    payment-failed: "Payment failed."
+    payment-failed-returned: "Payment failed. Your items have been returned."
+    none-to-sell: "You have none to sell."
+    inventory-changed: "Your inventory changed. Please try again."
+
+buy:
+  cannot-fill: "&cNo room in your inventory, or not enough money to fill it."
+  bad-amount: "&cThat isn't a number."
+  amount-positive: "&cEnter an amount above zero."
+
+sell-all:
+  nothing: "&eNothing in {scope} could be sold here."
+  done: "&aSold &f{units}&a from &f{items}&a item type(s) for &6{proceeds}&a."
+  blocked: "&c{blocked} item type(s) were blocked and not sold."
+  # What {scope} says when selling from a group menu or the whole inventory.
+  scope-group: "this group"
+  scope-inventory: "your inventory"
+
+unknown-category: "&cUnknown category: {category}"
+no-categories: "&cThe bazaar has no categories configured."
+
+# Lines 2-4 of the sign used for text input (line 1 is where the player types).
+sign:
+  search:
+    - "&8^^^^^^^^^^^^^^^"
+    - "&8Type an item"
+    - "&8name to search"
+  buy-amount:
+    - "&8^^^^^^^^^^^^^^^"
+    - "&8How many"
+    - "&8to buy?"
+  amount-buy:
+    - "&8^^^^^^^^^^^^^^^"
+    - "&8Amount to buy"
+    - "&8(or 'cancel')"
+  amount-sell:
+    - "&8^^^^^^^^^^^^^^^"
+    - "&8Amount to sell"
+    - "&8(or 'cancel')"
+
+gui:
+  browse-category: "&7Click to browse this category."
+  currently-viewing: "&aCurrently viewing"
+  # Fills %rbazaar_category% on the search results menu.
+  search-title: "Search: {query} ({count})"

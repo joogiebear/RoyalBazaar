@@ -109,20 +109,22 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
             what = cat.displayName();
         } else {
             scope = market.all();
-            what = "your inventory";
+            what = plugin.messages().get("sell-all.scope-inventory", "your inventory");
         }
         BazaarService.SellAllResult result = service.sellAll(player, scope);
         if (result.soldNothing()) {
-            plugin.messages().send(player, "sell-all.nothing",
-                    "&eNothing in " + what + " could be sold here.");
+            plugin.messages().send(player, "sell-all.nothing", "&eNothing in {scope} could be sold here.",
+                    java.util.Map.of("scope", what));
         } else {
             plugin.messages().send(player, "sell-all.done",
-                    "&aSold &f" + result.units() + "&a from &f" + result.distinctItems()
-                            + "&a item type(s) for &6" + String.format("%,.2f", result.proceeds()) + "&a.");
+                    "&aSold &f{units}&a from &f{items}&a item type(s) for &6{proceeds}&a.",
+                    java.util.Map.of("units", String.valueOf(result.units()),
+                            "items", String.valueOf(result.distinctItems()),
+                            "proceeds", String.format("%,.2f", result.proceeds())));
         }
         if (result.blocked() > 0) {
-            plugin.messages().send(player, "sell-all.blocked",
-                    "&c" + result.blocked() + " item type(s) were blocked and not sold.");
+            plugin.messages().send(player, "sell-all.blocked", "&c{blocked} item type(s) were blocked and not sold.",
+                    java.util.Map.of("blocked", String.valueOf(result.blocked())));
         }
     }
 

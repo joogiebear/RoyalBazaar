@@ -43,6 +43,11 @@ public final class MessageManager {
         return messages.getString(key, fallback);
     }
 
+    /** A multi-line text (YAML list), e.g. the hint lines of a sign prompt. */
+    public java.util.List<String> lines(String key, java.util.List<String> fallback) {
+        return messages.isList(key) ? messages.getStringList(key) : fallback;
+    }
+
     public String format(String key, String fallback, Map<String, String> placeholders) {
         String value = get(key, fallback);
         for (Map.Entry<String, String> e : placeholders.entrySet()) {

@@ -61,19 +61,19 @@ public final class BazaarService {
     public TradeResult buy(Player player, String itemId, long amount) {
         MarketItem item = market.get(itemId);
         if (item == null) {
-            return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, TradeSide.BUY, itemId, "Unknown item.");
+            return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, TradeSide.BUY, itemId, reason("unknown-item", "Unknown item."));
         }
         if (amount <= 0) {
-            return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId, "Invalid amount.");
+            return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId, reason("invalid-amount", "Invalid amount."));
         }
         if (item.frozen()) {
             return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.BUY, itemId,
-                    "This item is temporarily frozen.");
+                    reason("frozen", "This item is temporarily frozen."));
         }
         long maxOrder = config.maxOrder();
         if (maxOrder > 0 && amount > maxOrder) {
             return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId,
-                    "You can buy at most " + maxOrder + " at once.");
+                    reason("max-order", "You can buy at most {max} at once.").replace("{max}", String.valueOf(maxOrder)));
         }
         // Items are handed over through int-sized stacks, so an order beyond int range would be paid
         // for in full but truncated in the (int) cast below. Clamp before pricing so the cost and the
@@ -83,15 +83,15 @@ public final class BazaarService {
         ItemStack prototype = eco.resolve(itemId, 1);
         if (prototype == null) {
             return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.BUY, itemId,
-                    "This item is currently unavailable.");
+                    reason("unavailable", "This item is currently unavailable."));
         }
 
         double cost = PricingEngine.buyCost(item, amount);
         if (!guard.allow(player, TradeSide.BUY, itemId, amount, cost)) {
-            return TradeResult.fail(TradeResult.Status.REJECTED_BY_GUARD, TradeSide.BUY, itemId, "Trade blocked.");
+            return TradeResult.fail(TradeResult.Status.REJECTED_BY_GUARD, TradeSide.BUY, itemId, reason("blocked", "Trade blocked."));
         }
         if (!vault.has(player, cost)) {
-            return TradeResult.fail(TradeResult.Status.INSUFFICIENT_FUNDS, TradeSide.BUY, itemId, "Not enough money.");
+            return TradeResult.fail(TradeResult.Status.INSUFFICIENT_FUNDS, TradeSide.BUY, itemId, reason("not-enough-money", "Not enough money."));
         }
 
         // How many can actually fit? Policy decides what happens to the remainder.
@@ -103,17 +103,17 @@ public final class BazaarService {
                 case "drop" -> { /* give all; overflow dropped below */ }
                 default -> {
                     return TradeResult.fail(TradeResult.Status.INVENTORY_FULL, TradeSide.BUY, itemId,
-                            "Not enough inventory space.");
+                            reason("not-enough-space", "Not enough inventory space."));
                 }
             }
         }
         if (fill <= 0) {
-            return TradeResult.fail(TradeResult.Status.INVENTORY_FULL, TradeSide.BUY, itemId, "Inventory full.");
+            return TradeResult.fail(TradeResult.Status.INVENTORY_FULL, TradeSide.BUY, itemId, reason("inventory-full", "Inventory full."));
         }
 
         double finalCost = fill == amount ? cost : PricingEngine.buyCost(item, fill);
         if (!vault.withdraw(player, finalCost)) {
-            return TradeResult.fail(TradeResult.Status.INSUFFICIENT_FUNDS, TradeSide.BUY, itemId, "Payment failed.");
+            return TradeResult.fail(TradeResult.Status.INSUFFICIENT_FUNDS, TradeSide.BUY, itemId, reason("payment-failed", "Payment failed."));
         }
 
         giveItems(player, itemId, prototype.getMaxStackSize(), (int) fill);
@@ -163,24 +163,24 @@ public final class BazaarService {
     public TradeResult sell(Player player, String itemId, long amount) {
         MarketItem item = market.get(itemId);
         if (item == null) {
-            return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, TradeSide.SELL, itemId, "Unknown item.");
+            return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, TradeSide.SELL, itemId, reason("unknown-item", "Unknown item."));
         }
         if (item.frozen()) {
             return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.SELL, itemId,
-                    "This item is temporarily frozen.");
+                    reason("frozen", "This item is temporarily frozen."));
         }
         if (amount <= 0) {
-            return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.SELL, itemId, "Invalid amount.");
+            return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.SELL, itemId, reason("invalid-amount", "Invalid amount."));
         }
         int held = eco.countHeld(player, itemId);
         if (held <= 0) {
-            return TradeResult.fail(TradeResult.Status.INSUFFICIENT_ITEMS, TradeSide.SELL, itemId, "You have none to sell.");
+            return TradeResult.fail(TradeResult.Status.INSUFFICIENT_ITEMS, TradeSide.SELL, itemId, reason("none-to-sell", "You have none to sell."));
         }
         long fill = Math.min(amount, held); // amount == Long.MAX_VALUE for "sell all"
         double proceeds = PricingEngine.sellProceeds(item, fill);
 
         if (!guard.allow(player, TradeSide.SELL, itemId, fill, proceeds)) {
-            return TradeResult.fail(TradeResult.Status.REJECTED_BY_GUARD, TradeSide.SELL, itemId, "Trade blocked.");
+            return TradeResult.fail(TradeResult.Status.REJECTED_BY_GUARD, TradeSide.SELL, itemId, reason("blocked", "Trade blocked."));
         }
 
         // Plan on detached stacks: a shallow array copy would still mutate the originals, losing
@@ -190,13 +190,13 @@ public final class BazaarService {
         ItemStack[] reserved = reserveItems(before, itemId, (int) fill);
         if (reserved == null) {
             return TradeResult.fail(TradeResult.Status.INSUFFICIENT_ITEMS, TradeSide.SELL, itemId,
-                    "Your inventory changed. Please try again.");
+                    reason("inventory-changed", "Your inventory changed. Please try again."));
         }
         player.getInventory().setStorageContents(reserved);
         if (!vault.deposit(player, proceeds)) {
             player.getInventory().setStorageContents(before);
             return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.SELL, itemId,
-                    "Payment failed. Your items have been returned.");
+                    reason("payment-failed-returned", "Payment failed. Your items have been returned."));
         }
         item.setMid(PricingEngine.midAfterSell(item, fill));
         item.volume().recordSell(fill);
@@ -409,6 +409,12 @@ public final class BazaarService {
         double eps = 0.1;
         p.put("rbazaar_group_trend", pct > eps ? "&a▲" : pct < -eps ? "&c▼" : "&7=");
         return p;
+    }
+
+    /** A trade failure reason from {@code messages.yml} ({@code trade.reasons.<key>}), else English. */
+    private String reason(String key, String fallback) {
+        return plugin instanceof com.mystipixel.royalbazaar.RoyalBazaarPlugin rb && rb.messages() != null
+                ? rb.messages().get("trade.reasons." + key, fallback) : fallback;
     }
 
     /** Config {@code display:} override, else the resolved item's own name, else a prettified id. */
