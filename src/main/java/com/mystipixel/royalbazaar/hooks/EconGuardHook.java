@@ -8,17 +8,8 @@ import java.lang.reflect.Method;
 import java.util.UUID;
 
 /**
- * Optional anti-abuse integration with EconGuard.
- *
- * <p>Wired by reflection against EconGuard's flat {@code EconGuard.record(...)} bridge, so RoyalBazaar
- * carries no build-time dependency on EconGuard and builds standalone. Resolved once at construction;
- * when EconGuard is absent (or too old to expose the bridge) every call is a safe no-op.
- *
- * <p>The bazaar is the server's biggest faucet/sink, so every completed trade is reported to EconGuard
- * for its ledger and heuristics, and every trade first passes {@link #allow} — EconGuard's
- * {@code allowTrade} veto, which refuses flagged players when its
- * {@code enforcement.block-flagged-trades} is on and permits everyone otherwise. On an EconGuard old
- * enough to lack the veto bridge, {@link #allow} simply permits, as before.
+ * Optional EconGuard integration, by reflection against its static {@code EconGuard.record}/{@code allowTrade}
+ * bridge so there's no build-time dependency. Every call is a no-op when EconGuard is absent or too old.
  */
 public final class EconGuardHook {
 
@@ -40,7 +31,7 @@ public final class EconGuardHook {
                 try {
                     resolvedVeto = econGuard.getMethod("allowTrade", UUID.class);
                 } catch (NoSuchMethodException oldEconGuard) {
-                    // Predates the veto bridge — reporting still works, allow() permits.
+                    // predates the veto bridge: reporting still works, allow() permits
                 }
             } catch (Throwable ignored) {
                 // EconGuard missing or predates the bridge - stay a no-op.
@@ -54,14 +45,13 @@ public final class EconGuardHook {
         return bridge != null;
     }
 
-    /** Whether the installed EconGuard exposes the pre-trade veto (its enforcement decides the rest). */
     public boolean hasVeto() {
         return veto != null;
     }
 
     /**
-     * The pre-trade check. False only when EconGuard both flags this player and has enforcement
-     * switched on; any failure to answer permits — an audit core outage must not close the bazaar.
+     * Pre-trade veto. False only when EconGuard flags the player and enforcement is on; any failure
+     * permits, so an EconGuard outage never closes the bazaar.
      */
     public boolean allow(Player player, TradeSide side, String itemId, long quantity, double total) {
         if (veto == null) {
@@ -74,10 +64,7 @@ public final class EconGuardHook {
         }
     }
 
-    /**
-     * Post-trade report to EconGuard's ledger / heuristics. A buy debits the player (outgoing); a sell
-     * credits them (incoming). Fire-and-forget: an audit failure must never affect a committed trade.
-     */
+    /** Post-trade report to EconGuard. Fire-and-forget: a failure never affects a committed trade. */
     public void observe(Player player, TradeSide side, String itemId, long quantity, double total) {
         if (bridge == null) {
             return;

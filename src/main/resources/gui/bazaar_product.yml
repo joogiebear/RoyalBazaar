@@ -1,20 +1,14 @@
-# RoyalBazaar - product page for one item.
-# A summary, not a keypad: the item and its live stats, one button per direction. Buying opens the
-# instant-buy menu (bazaar_buy.yml) where the quantity is chosen; selling is immediate.
-# Since the server is always the counterparty (algorithmic pricing, infinite depth), there are no
-# buy/sell orders - just instant buy and instant sell at the live quote.
+# Product page for one item. Buying opens bazaar_buy.yml to choose a quantity; selling is immediate.
+# The server is always the counterparty, so there are no buy/sell orders.
 #
-# Click ids: rbazaar_open_buy · rbazaar_sell · rbazaar_back · close_inventory · play_sound
+# Click ids: rbazaar_open_buy, rbazaar_sell, rbazaar_back, close_inventory, play_sound
 
 title: "%rbazaar_category_id% &7» &f%rbazaar_item_display%"
 command: []
 rows: 4
 
-# Menu-level sounds. This plays when the menu opens — including when a button elsewhere opens it.
-# So a button that navigates (back, open_menu, open_buy, open_product) must NOT also add play_sound:
-# the destination menu already speaks for the click, and two sounds fire as one doubled click.
-# Buttons that only re-render the current menu (buy, sell, sell all) DO need their own play_sound,
-# because a refresh deliberately does not replay this sound.
+# Plays whenever the menu opens. Navigation buttons should not add their own play_sound (it would
+# double up); buttons that only re-render the menu (buy, sell, sell all) need one, since a refresh is silent.
 sounds:
   open:
     enabled: true
@@ -34,7 +28,6 @@ pages:
         - "111111111"
 
 slots:
-  # ---- the item + live stats ----
   - item: "%rbazaar_item% name:\"%rbazaar_item_display%\""
     lore:
       - ""
@@ -43,14 +36,14 @@ slots:
       - "&7Spread: &f%rbazaar_spread_pct%%"
       - ""
       - "&7Trend: %rbazaar_trend% &7(%rbazaar_change_24h% 24h&7, %rbazaar_change_7d% &77d)"
-      - "&7Week range: &e$%rbazaar_low_7d% &7— &a$%rbazaar_high_7d%"
+      - "&7Week range: &e$%rbazaar_low_7d% &7- &a$%rbazaar_high_7d%"
       - "&7Traded (24h): &f%rbazaar_volume_24h%"
       - ""
       - "&7In your inventory: &f%rbazaar_held_amount%"
     row: 2
     column: 5
 
-  # ---- buy: choose a quantity on the next screen ----
+  # buy: choose a quantity on the next screen
   - item: emerald name:"&aBuy Instantly"
     lore:
       - "&7Buy Price: &a$%rbazaar_buy_price%"
@@ -66,7 +59,7 @@ slots:
         args:
           item: "%rbazaar_item%"
 
-  # ---- sell: everything you are carrying, immediately ----
+  # sell: everything you are carrying, immediately
   - item: hopper name:"&eSell Instantly"
     lore:
       - "&7Sell Price: &e$%rbazaar_sell_price%"
@@ -88,7 +81,6 @@ slots:
           pitch: 1
           volume: 1
 
-  # ---- nav ----
   - item: arrow name:"&7« Back"
     lore: []
     row: 4

@@ -2,8 +2,7 @@ package com.mystipixel.royalbazaar.market;
 
 /**
  * Outcome of a buy/sell attempt. {@code total} is the cash moved (spread included); {@code filled}
- * is how many units actually transacted (may be less than requested if the inventory was full or the
- * player didn't hold enough on a sell).
+ * can be less than requested if the inventory was full or the player held too few on a sell.
  */
 public record TradeResult(Status status, TradeSide side, String itemId, long filled, double total, String message) {
 

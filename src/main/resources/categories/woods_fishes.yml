@@ -55,12 +55,12 @@ groups:
     order: 10
 
 items:
-  # --- Logs ---
+  # Logs
   oak_log:
     item: "minecraft:oak_log"
     group: logs
     base_price: 4.0
-    elasticity: 120000    # staple — very stable
+    elasticity: 120000    # staple, very stable
   spruce_log:
     item: "minecraft:spruce_log"
     group: logs
@@ -94,7 +94,7 @@ items:
     group: logs
     base_price: 5.0
 
-  # --- Planks & Sticks ---
+  # Planks & Sticks
   # 4 planks come out of one log, so a plank must not exceed a quarter of its log.
   oak_planks:
     item: "minecraft:oak_planks"
@@ -158,7 +158,7 @@ items:
     group: planks
     base_price: 1.25      # coal + stick (5.5) yields 4
 
-  # --- Saplings & Leaves ---
+  # Saplings & Leaves
   oak_sapling:
     item: "minecraft:oak_sapling"
     group: saplings
@@ -204,7 +204,7 @@ items:
     group: saplings
     base_price: 4.0
 
-  # --- Nether Wood ---
+  # Nether Wood
   crimson_stem:
     item: "minecraft:crimson_stem"
     group: nether_wood
@@ -238,7 +238,7 @@ items:
     group: nether_wood
     base_price: 18.0
 
-  # --- Bamboo ---
+  # Bamboo
   bamboo:
     item: "minecraft:bamboo"
     group: bamboo
@@ -252,7 +252,7 @@ items:
     group: bamboo
     base_price: 1.5
 
-  # --- Fish ---
+  # Fish
   cod:
     item: "minecraft:cod"
     group: fish
@@ -290,7 +290,7 @@ items:
     group: fish
     base_price: 12.0      # 3 sticks + 2 string
 
-  # --- Kelp & Sea Life ---
+  # Kelp & Sea Life
   kelp:
     item: "minecraft:kelp"
     group: sea
@@ -320,7 +320,7 @@ items:
     group: sea
     base_price: 55.0
 
-  # --- Prismarine ---
+  # Prismarine
   prismarine_shard:
     item: "minecraft:prismarine_shard"
     group: prismarine
@@ -346,7 +346,7 @@ items:
     group: prismarine
     base_price: 170.0     # 4 shards + 5 crystals
 
-  # --- Coral ---
+  # Coral
   tube_coral_block:
     item: "minecraft:tube_coral_block"
     group: coral

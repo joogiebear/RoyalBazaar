@@ -15,12 +15,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Runs the effect list bound to a clicked slot. Covers the EcoMenus-style effects the bazaar menus
- * use ({@code open_menu}, {@code close_inventory}, {@code play_sound}, {@code send_message}) plus the
- * RoyalBazaar effects ({@code rbazaar_open_product}, {@code rbazaar_buy}, {@code rbazaar_sell},
- * {@code rbazaar_buy_prompt}, page nav). Unknown ids are ignored so authors can't crash a menu.
- */
+/** Runs the effect list bound to a clicked slot. Unknown effect ids are ignored so a typo can't break a menu. */
 public final class EffectDispatcher {
 
     private final GuiManager gui;
@@ -71,7 +66,7 @@ public final class EffectDispatcher {
             case "rbazaar_next_page" -> turnPage(player, page(player) + 1);
             case "rbazaar_prev_page" -> turnPage(player, Math.max(1, page(player) - 1));
 
-            default -> { /* unknown effect id — ignore */ }
+            default -> { /* unknown effect id: ignore */ }
         }
     }
 
@@ -85,7 +80,7 @@ public final class EffectDispatcher {
         if ("all".equalsIgnoreCase(amountArg)) {
             amount = Long.MAX_VALUE;
         } else if ("fill".equalsIgnoreCase(amountArg)) {
-            // As much as fits and can be paid for. Resolved here so the config can just say "fill".
+            // as much as fits and can be paid for
             amount = service.fillAmount(player, item);
             if (amount <= 0) {
                 messages.send(player, "buy.cannot-fill",
@@ -97,13 +92,12 @@ public final class EffectDispatcher {
         }
         TradeResult result = buy ? service.buy(player, item, amount) : service.sell(player, item, amount);
         sendFeedback(player, result);
-        gui.refresh(player); // prices moved — re-render
+        gui.refresh(player);
     }
 
     private void openMenu(Player player, String menu, String category, String group) {
         switch (menu) {
-            // The old hub is retired. A config still pointing at it lands on the default category
-            // instead of a dead end, so existing menus keep working without being edited.
+            // retired hub: old configs pointing at it land on the default category
             case "bazaar_main" -> gui.openDefault(player);
             case "bazaar_category" -> gui.openCategory(player, category, 1);
             case "bazaar_group" -> gui.openGroup(player, category, group, 1);
@@ -119,7 +113,7 @@ public final class EffectDispatcher {
             float volume = (float) toDouble(e.argString("volume", "1"), 1.0);
             player.playSound(player.getLocation(), sound, volume, pitch);
         } catch (IllegalArgumentException ignored) {
-            // unknown sound name — skip
+            // unknown sound name, skip
         }
     }
 
@@ -136,16 +130,8 @@ public final class EffectDispatcher {
         }
     }
 
-    /**
-     * Sell everything in the player's inventory that the current view covers.
-     *
-     * <p>Scope follows how deep the player has navigated, not which category they happen to be browsing.
-     * Anywhere above a group — including inside a category — the button sells the whole inventory, because
-     * a player standing in the bazaar wants one button that empties their bags. Only once they open a
-     * specific group does it narrow to that group, where the intent is clearly "sell just these".
-     *
-     * <p>{@code scope: all} in the config forces the wide behaviour even inside a group.
-     */
+    // sells the whole inventory everywhere except inside a group, where it narrows to that group;
+    // scope: all forces the whole inventory there too
     private void sellAll(Player player, String scope) {
         OpenView view = gui.viewOf(player);
         String categoryId = view == null ? null : view.categoryId();
@@ -177,23 +163,21 @@ public final class EffectDispatcher {
         gui.refresh(player);
     }
 
-    /** The item the open view is about, so a button doesn't have to repeat it in config. */
     private String itemOf(Player player) {
         OpenView view = gui.viewOf(player);
         return view == null ? null : view.itemId();
     }
 
-    /** Ask for a buy quantity on a sign, then buy that many. */
     private void askBuyAmount(Player player, String itemId) {
         if (itemId == null) {
             return;
         }
         signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8How many", "&8to buy?"), typed -> {
             if (typed == null && !SignInput.showingOwnInventory(player)) {
-                return;                             // another plugin's menu took over — leave it be
+                return;                             // another plugin's menu took over, leave it be
             }
             if (typed == null || typed.isBlank()) {
-                gui.openBuy(player, itemId);        // cancelled — back where they were
+                gui.openBuy(player, itemId);        // cancelled: back where they were
                 return;
             }
             long amount;
@@ -214,14 +198,8 @@ public final class EffectDispatcher {
         });
     }
 
-    /**
-     * Go up one level from wherever the player is: a product returns to its group (or its category, if it
-     * isn't grouped), a group returns to its category, and anything else falls back to the default view.
-     *
-     * <p>Worked out from the open view rather than hard-coded per menu, because a fixed target is wrong
-     * as soon as a menu is reachable from more than one place — a product opened from a group and the
-     * same product opened from a search need different parents.
-     */
+    // parent is worked out from the open view, not fixed per menu: a product can be reached from a
+    // group or from a search
     private void goBack(Player player) {
         OpenView view = gui.viewOf(player);
         if (view == null) {
@@ -251,21 +229,20 @@ public final class EffectDispatcher {
         gui.openDefault(player);
     }
 
-    /** Ask for a search term on a sign, then show the results. */
     private void beginSearch(Player player) {
         signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8Type an item", "&8name to search"), query -> {
             if (query == null && !SignInput.showingOwnInventory(player)) {
-                return;                       // another plugin's menu took over — leave it be
+                return;                       // another plugin's menu took over, leave it be
             }
             if (query == null || query.isBlank()) {
-                gui.openDefault(player);      // cancelled or the sign wouldn't open — put them back
+                gui.openDefault(player);      // cancelled or the sign wouldn't open
                 return;
             }
             gui.openSearch(player, query, 1);
         });
     }
 
-    /** Page the current view, staying inside a search result set rather than falling back to a category. */
+    // stays inside a search result set rather than falling back to a category
     private void turnPage(Player player, int page) {
         OpenView view = gui.viewOf(player);
         if (view != null && view.query() != null) {

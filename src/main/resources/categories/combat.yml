@@ -83,7 +83,7 @@ groups:
     order: 16
 
 items:
-  # --- Bone ---
+  # Bone
   bone:
     item: "minecraft:bone"
     group: bone
@@ -93,7 +93,7 @@ items:
     group: bone
     base_price: 16.0      # 9 bone meal = 3 bones
 
-  # --- String & Web ---
+  # String & Web
   string:
     item: "minecraft:string"
     group: string
@@ -103,13 +103,13 @@ items:
     group: string
     base_price: 25.0
 
-  # --- Gunpowder ---
+  # Gunpowder
   gunpowder:
     item: "minecraft:gunpowder"
     group: gunpowder
     base_price: 10.0
 
-  # --- Spider Eye ---
+  # Spider Eye
   spider_eye:
     item: "minecraft:spider_eye"
     group: spider_eye
@@ -119,7 +119,7 @@ items:
     group: spider_eye
     base_price: 15.0      # spider eye + sugar + brown mushroom
 
-  # --- Zombie & Drowned ---
+  # Zombie & Drowned
   rotten_flesh:
     item: "minecraft:rotten_flesh"
     group: undead
@@ -136,7 +136,7 @@ items:
     ceiling_pct: 4.0
     elasticity: 5000
 
-  # --- Blaze ---
+  # Blaze
   blaze_rod:
     item: "minecraft:blaze_rod"
     group: blaze
@@ -146,7 +146,7 @@ items:
     group: blaze
     base_price: 22.0      # 1 rod yields 2
 
-  # --- Slime & Magma ---
+  # Slime & Magma
   slime_ball:
     item: "minecraft:slime_ball"
     group: slime
@@ -160,7 +160,7 @@ items:
     group: slime
     base_price: 40.0      # slime ball + blaze powder
 
-  # --- Enderman ---
+  # Enderman
   ender_pearl:
     item: "minecraft:ender_pearl"
     group: ender
@@ -170,20 +170,20 @@ items:
     group: ender
     base_price: 72.0      # pearl + blaze powder
 
-  # --- Ghast ---
+  # Ghast
   ghast_tear:
     item: "minecraft:ghast_tear"
     group: ghast
     base_price: 120.0
     ceiling_pct: 4.0
 
-  # --- Phantom ---
+  # Phantom
   phantom_membrane:
     item: "minecraft:phantom_membrane"
     group: phantom
     base_price: 60.0
 
-  # --- Shulker ---
+  # Shulker
   shulker_shell:
     item: "minecraft:shulker_shell"
     group: shulker
@@ -191,7 +191,7 @@ items:
     ceiling_pct: 4.0
     elasticity: 12000
 
-  # --- Trial Chambers ---
+  # Trial Chambers
   breeze_rod:
     item: "minecraft:breeze_rod"
     group: trial
@@ -215,7 +215,7 @@ items:
     ceiling_pct: 5.0
     elasticity: 2000
 
-  # --- Bows & Arrows ---
+  # Bows & Arrows
   arrow:
     item: "minecraft:arrow"
     group: bows
@@ -233,7 +233,7 @@ items:
     group: bows
     base_price: 34.0      # 3 sticks + 2 string + iron + tripwire hook
 
-  # --- Armour ---
+  # Armour
   iron_helmet:
     item: "minecraft:iron_helmet"
     group: armor
@@ -275,7 +275,7 @@ items:
     group: armor
     base_price: 22.0      # 6 planks + iron ingot
 
-  # --- Weapons ---
+  # Weapons
   iron_sword:
     item: "minecraft:iron_sword"
     group: weapons
@@ -295,7 +295,7 @@ items:
     ceiling_pct: 4.0
     elasticity: 5000
 
-  # --- Rare Drops ---
+  # Rare Drops
   totem_of_undying:
     item: "minecraft:totem_of_undying"
     group: rare

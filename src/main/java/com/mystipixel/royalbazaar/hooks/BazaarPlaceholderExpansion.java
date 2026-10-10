@@ -8,10 +8,8 @@ import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * PlaceholderAPI expansion so live prices are usable anywhere (holograms, scoreboards, other menus).
- * Format: {@code %royalbazaar_buy_<itemId>%}, {@code %royalbazaar_sell_<itemId>%},
- * {@code %royalbazaar_mid_<itemId>%}. Item ids keep their namespace, e.g.
- * {@code %royalbazaar_buy_ecoitem:enchanted_cobblestone%}.
+ * PlaceholderAPI expansion: {@code %royalbazaar_<buy|sell|mid|change24h|change7d>_<itemId>%}.
+ * Item ids keep their namespace, e.g. {@code %royalbazaar_buy_ecoitem:enchanted_cobblestone%}.
  */
 public final class BazaarPlaceholderExpansion extends PlaceholderExpansion {
 

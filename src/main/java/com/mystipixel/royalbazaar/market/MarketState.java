@@ -1,11 +1,8 @@
 package com.mystipixel.royalbazaar.market;
 
 /**
- * An immutable copy of the persisted fields of one {@link MarketItem}.
- *
- * <p>Market state is owned by the main thread and holds no locks, so the write-behind flush and the
- * history snapshot must not read live {@code MarketItem}s from a background thread. They capture these
- * detached values on the main thread instead, then write them off-thread.
+ * Immutable copy of a {@link MarketItem}'s persisted fields. Market state is main-thread only, so
+ * capture this on the main thread and hand it to the background writer.
  */
 public record MarketState(String id, double mid, double midYesterday, long updatedAt) {
 

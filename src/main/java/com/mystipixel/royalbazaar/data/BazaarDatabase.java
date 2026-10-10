@@ -21,11 +21,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * All persistence for RoyalBazaar. Prices live in memory (authoritative); this class only persists
- * them so they survive restarts, plus the history + volume + transaction audit tables. Every method
- * here is blocking and MUST be called off the main thread (the plugin schedules flushes async).
- *
- * <p>One JDBC/HikariCP implementation serves both SQLite (default, single server) and MySQL (networks).
+ * Persistence for prices, history and the transaction log (SQLite or MySQL). In-memory prices are
+ * authoritative. Every method blocks: call it off the main thread.
  */
 public final class BazaarDatabase {
 
@@ -43,8 +40,6 @@ public final class BazaarDatabase {
         this.config = storageConfig;
         this.logger = logger;
     }
-
-    // ------------------------------------------------------------------ lifecycle
 
     public void init() throws SQLException {
         String rawType = config.getString("type", "SQLITE").toUpperCase();
@@ -74,8 +69,7 @@ public final class BazaarDatabase {
             hikari.setJdbcUrl("jdbc:sqlite:" + db.getAbsolutePath());
             hikari.setDriverClassName("org.sqlite.JDBC");
             hikari.setMaximumPoolSize(SqliteSettings.POOL_SIZE);
-            // Driver properties, not connectionInitSql: sqlite-jdbc prepares only the first statement
-            // of a multi-statement init string, so foreign_keys=ON was being dropped.
+            // driver properties, not connectionInitSql (see SqliteSettings)
             hikari.setDataSourceProperties(SqliteSettings.properties());
         }
 
@@ -124,12 +118,7 @@ public final class BazaarDatabase {
         }
     }
 
-    /**
-     * Creates an index unless the table already carries one by that name. MySQL has no
-     * {@code CREATE INDEX IF NOT EXISTS} — SQLite and MariaDB both do, which is why this went
-     * unnoticed — so the existence check belongs here rather than in the DDL. Asking the catalog
-     * rather than declaring the index inline also retrofits a table created before it existed.
-     */
+    // MySQL has no CREATE INDEX IF NOT EXISTS, so ask the catalog first
     private void createIndexIfMissing(Connection c, String name, String table, String columns)
             throws SQLException {
         try (ResultSet rs = c.getMetaData().getIndexInfo(null, null, table, false, true)) {
@@ -148,9 +137,7 @@ public final class BazaarDatabase {
         return type == Type.MYSQL ? "AUTO_INCREMENT" : "AUTOINCREMENT";
     }
 
-    // ------------------------------------------------------------------ state
-
-    /** Load every persisted price row, keyed by item id, for startup seeding. */
+    /** Persisted rows keyed by item id, as {@code {mid, midYesterday, updatedAt}}. */
     public Map<String, double[]> loadState() throws SQLException {
         Map<String, double[]> out = new HashMap<>();
         String sql = "SELECT item_id, mid_price, mid_yesterday, updated_at FROM rb_state";
@@ -167,7 +154,6 @@ public final class BazaarDatabase {
         return out;
     }
 
-    /** Write-behind flush of dirty items. UPSERT so first-run inserts and later updates both work. */
     public void flushState(Collection<MarketState> dirty) throws SQLException {
         if (dirty.isEmpty()) {
             return;
@@ -189,11 +175,7 @@ public final class BazaarDatabase {
         }
     }
 
-    /**
-     * Delete price history older than {@code cutoff}. Without this rb_history only ever grows — one
-     * row per item per snapshot, so a few hundred items reach millions of rows a year and every write
-     * slows down. Served by the (item_id, ts) key. Returns how many rows went.
-     */
+    /** Delete price history older than {@code cutoff}; returns the rows removed. */
     public int pruneHistory(long cutoff) throws SQLException {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement("DELETE FROM rb_history WHERE ts < ?")) {
@@ -202,7 +184,6 @@ public final class BazaarDatabase {
         }
     }
 
-    /** Append a price snapshot for the graph / 24h stats. */
     public void snapshot(Collection<MarketState> items, long ts) throws SQLException {
         String sql = "INSERT INTO rb_history (item_id, ts, mid_price) VALUES (?,?,?)";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
@@ -217,12 +198,8 @@ public final class BazaarDatabase {
     }
 
     /**
-     * Rolling week stats from the price history: for every item with at least one snapshot since
-     * {@code sinceTs}, the mid at the start of that window plus the window's low and high, as
-     * {@code {midThen, low, high}}. Items with no snapshots in the window are simply absent.
-     *
-     * <p>If retention is shorter than the window, "the start of the window" degrades to "the oldest
-     * snapshot kept" — a shorter honest baseline rather than no baseline.
+     * {@code {midThen, low, high}} per item with a snapshot since {@code sinceTs}. With retention shorter
+     * than the window, midThen is the oldest snapshot kept.
      */
     public Map<String, double[]> weekStats(long sinceTs) throws SQLException {
         Map<String, double[]> out = new HashMap<>();
@@ -246,14 +223,10 @@ public final class BazaarDatabase {
         return out;
     }
 
-    /**
-     * Each item's mid at its earliest snapshot at or after {@code sinceTs}: the baseline for a
-     * "change over the last N hours" figure. Items with no snapshot in the window are absent. Derived
-     * from history rather than a timer, so it survives restarts and needs no roll-over schedule.
-     */
+    /** Each item's mid at its earliest snapshot at or after {@code sinceTs}; items without one are absent. */
     public Map<String, Double> earliestMidSince(long sinceTs) throws SQLException {
         Map<String, Double> out = new HashMap<>();
-        // PK (item_id, ts) makes the join unambiguous.
+        // PK (item_id, ts) makes the join unambiguous
         String sql = "SELECT h.item_id, h.mid_price FROM rb_history h "
                 + "JOIN (SELECT item_id, MIN(ts) mts FROM rb_history WHERE ts >= ? GROUP BY item_id) x "
                 + "ON x.item_id = h.item_id AND x.mts = h.ts";
@@ -268,7 +241,6 @@ public final class BazaarDatabase {
         return out;
     }
 
-    /** Append a trade to the audit log — EconGuard's feed and your dispute trail. */
     public void logTransaction(UUID player, String itemId, TradeSide side, long qty, double unitMid, double total, long ts) {
         String sql = "INSERT INTO rb_transactions (ts, player, item_id, side, quantity, unit_mid, total) VALUES (?,?,?,?,?,?,?)";
         try (Connection c = dataSource.getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {

@@ -1,9 +1,6 @@
 package com.mystipixel.royalbazaar.market;
 
-/**
- * A rolling 24-hour volume tracker: 24 hourly buckets in a ring. Feeds the {@code %rbazaar_volume_24h%}
- * placeholder and gives EconGuard a cheap read of recent trade pressure. Main-thread only.
- */
+/** Rolling 24-hour volume: 24 hourly buckets in a ring. Main-thread only. */
 public final class VolumeWindow {
 
     private static final int HOURS = 24;
@@ -41,7 +38,7 @@ public final class VolumeWindow {
         sold[head] += qty;
     }
 
-    /** Advance the ring without recording — call on the tick so stale hours drop off. */
+    /** Advance the ring without recording; call on the tick so stale hours drop off. */
     public void tick() {
         advanceTo(System.currentTimeMillis() / HOUR_MS);
     }

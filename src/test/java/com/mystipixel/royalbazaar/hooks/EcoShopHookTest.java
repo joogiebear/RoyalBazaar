@@ -12,12 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * EcoShop prices drive every {@code base_price: auto} and {@code npc_floor}/{@code npc_ceiling}.
- * When this hook finds nothing it fails <em>silently</em> — items fall back to their defaults or get
- * skipped — so the failure mode is a quietly wrong economy rather than a crash. These tests pin the
- * parse down.
- */
+// when this hook finds nothing it fails silently (items fall back or get skipped), so pin the parse down
 class EcoShopHookTest {
 
     private static final String CATEGORY = """
@@ -46,11 +41,7 @@ class EcoShopHookTest {
         Files.writeString(file, body);
     }
 
-    /**
-     * The regression this exists for: EcoShop lets categories live in subfolders, and servers commonly keep
-     * every one under categories/npc/. A non-recursive listing found zero files and reported
-     * "anchored prices available for 0 items" while looking perfectly healthy.
-     */
+    // servers commonly keep every category under categories/npc/
     @Test
     void findsCategoriesInSubfolders(@TempDir Path tmp) throws Exception {
         write(tmp.resolve("EcoShop/categories/npc/mining_merchant.yml"), CATEGORY);
@@ -69,7 +60,6 @@ class EcoShopHookTest {
         assertEquals(270.0, hook.buyValue("minecraft:iron_block"));
     }
 
-    /** A bare vanilla id in EcoShop must match the namespaced id RoyalBazaar configs use. */
     @Test
     void matchesBareEcoShopIdsAgainstNamespacedBazaarIds(@TempDir Path tmp) throws Exception {
         write(tmp.resolve("EcoShop/categories/npc/mining_merchant.yml"), CATEGORY);
@@ -79,7 +69,6 @@ class EcoShopHookTest {
         assertEquals(12.0, hook.buyValue("coal"), "an un-namespaced lookup should normalise the same way");
     }
 
-    /** EcoShop's own _example.yml is a template, not real prices. */
     @Test
     void skipsUnderscorePrefixedExamples(@TempDir Path tmp) throws Exception {
         write(tmp.resolve("EcoShop/categories/_example.yml"), CATEGORY);

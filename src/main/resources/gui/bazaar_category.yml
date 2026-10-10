@@ -1,12 +1,6 @@
-# RoyalBazaar - category grid.
-# The "0" slots in the mask are the live area: entries from the category config flow in here
-# automatically and page themselves. Never edit item slots by hand.
-#
-# What fills the "0" slots depends on the category:
-#   - category declares groups:  -> 'group-content' below renders one icon per group
-#                                   (plus any un-grouped items, via 'content')
-#   - category has no groups:    -> 'content' below renders the products directly
-# Both templates are kept so a server can mix flat and grouped categories freely.
+# Category grid. Entries from the category config fill the mask's "0" slots and page themselves.
+#   category declares groups:  'group-content' renders one icon per group (un-grouped items use 'content')
+#   category has no groups:    'content' renders the products directly
 
 title: "&8Bazaar &7» &f%rbazaar_category%"
 command: []
@@ -24,9 +18,7 @@ backwards-arrow:
   row: 6
   column: 2
 
-# Category rail down the left edge: one icon per category, in the order they load, so a player can
-# move between categories without leaving the menu. The icon and name come from each category's
-# own config, so adding a category adds a rail entry automatically. Drawn over the mask.
+# Category rail: one icon per category, taken from each category's own config. Drawn over the mask.
 category-rail:
   enabled: true
   column: 1
@@ -35,22 +27,16 @@ category-rail:
   lore:
     - "&7Click to browse this category."
 
-# Grid layout:
-#   The "0" slots below are the live area — entries flow into them in order. Move, shrink or grow that
-#   area by editing the pattern; nothing about the layout is fixed in code.
-#   To pin a specific entry to a specific square, give it a row/column (or a raw slot) in its own
-#   categories/*.yml entry:
+# The "0" slots below are the live area; entries flow into them in order. Edit the pattern to reshape it.
+# To pin an entry to a square, give it a row/column (or a raw slot) in its categories/*.yml entry:
 #       wheat:
 #         item: minecraft:wheat
 #         row: 2
 #         column: 3
 #   Pinned entries hold their square on the first page; everything else fills in around them.
 
-# Menu-level sounds. This plays when the menu opens — including when a button elsewhere opens it.
-# So a button that navigates (back, open_menu, open_buy, open_product) must NOT also add play_sound:
-# the destination menu already speaks for the click, and two sounds fire as one doubled click.
-# Buttons that only re-render the current menu (buy, sell, sell all) DO need their own play_sound,
-# because a refresh deliberately does not replay this sound.
+# Plays whenever the menu opens. Navigation buttons should not add their own play_sound (it would
+# double up); buttons that only re-render the menu (buy, sell, sell all) need one, since a refresh is silent.
 sounds:
   open:
     enabled: true
@@ -71,8 +57,7 @@ pages:
         - "110000001"
         - "111111111"
 
-# One icon per group, for categories that declare a groups: block. The summary is live —
-# it is recomputed from the group's products every time the menu is drawn.
+# One icon per group, for categories that declare groups:. The summary is recomputed on every draw.
 group-content:
   template:
     item: "%rbazaar_group_icon%"
@@ -109,8 +94,7 @@ content:
           item: "%rbazaar_item%"
 
 slots:
-  # Sells your whole inventory. Scope follows how deep you have navigated: anywhere above a group
-  # this empties your bags, and only inside a group does it narrow to that group's items.
+  # Sells the whole inventory; inside a group menu it sells only that group's items.
   - item: chest name:"&6Sell All"
     lore:
       - "&7Sell every item in your inventory"

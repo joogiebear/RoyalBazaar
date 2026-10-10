@@ -7,9 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Per-player state for the currently open bazaar inventory: which menu it is, the category/group/item
- * it is scoped to, the current page, and the click handlers keyed by raw slot index. Rebuilt on every
- * open so effect lists never need to be serialised onto the ItemStacks.
+ * Per-player state for the open bazaar inventory. Rebuilt on every open so click handlers never need
+ * to be serialised onto the ItemStacks.
  */
 public final class OpenView {
 
@@ -33,7 +32,7 @@ public final class OpenView {
         this.itemId = itemId;
     }
 
-    /** The search text when this view is a search result set, else null. */
+    // search text when this view is a search result set, else null
     private String query;
 
     public String query() { return query; }

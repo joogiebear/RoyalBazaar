@@ -15,11 +15,8 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * In-memory registry of every {@link MarketItem}, keyed by eco lookup id, plus the ordered category
- * listing used to build the menus. Loads pricing config from {@code categories/*.yml}, runs the
- * reversion/stat tick, and hands dirty items to the database for write-behind.
- *
- * <p>All reads/writes of item state happen on the main thread; the manager itself holds no locks.
+ * Registry of every {@link MarketItem} and the ordered categories. Holds no locks: item state is
+ * read and written on the main thread only.
  */
 public final class MarketManager {
 
@@ -29,7 +26,7 @@ public final class MarketManager {
     private final Map<String, MarketItem> byId = new LinkedHashMap<>();
     private final Map<String, CategoryConfig> categories = new LinkedHashMap<>();
 
-    // EMA smoothing for the trend arrow; small alpha = smoother.
+    // small alpha = smoother trend arrow
     private double emaAlpha = 0.2;
 
     public MarketManager(Logger logger) {
@@ -37,9 +34,8 @@ public final class MarketManager {
     }
 
     /**
-     * (Re)load categories + items from the loaded {@link CategoryConfig} list. Items that already
-     * existed keep their live state (see {@link MarketItem#carryOver}); the ids returned are the ones
-     * that did not, which the caller seeds from the database.
+     * Existing items keep their live state ({@link MarketItem#carryOver}). Returns the new ids, which
+     * the caller seeds from the database.
      */
     public Set<String> load(List<CategoryConfig> loaded, double emaAlpha, EcoShopHook shop) {
         this.emaAlpha = emaAlpha;
@@ -52,13 +48,12 @@ public final class MarketManager {
         for (CategoryConfig cat : loaded) {
             categories.put(cat.id(), cat);
             for (MarketItem fresh : cat.buildItems(shop)) {
-                // "wheat" and "minecraft:wheat" are the same physical item. Two listings of it would be
-                // two independent prices, which players can arbitrage by buying one and selling the other.
+                // "wheat" and "minecraft:wheat" are one item; two listings would be an arbitrage
                 String key = canonical(fresh.id());
                 String owner = ownerByKey.putIfAbsent(key, cat.id());
                 if (owner != null) {
                     logger.warning("[category " + cat.id() + "] item '" + fresh.id() + "' is already listed in"
-                            + " category '" + owner + "' — skipping the duplicate.");
+                            + " category '" + owner + "'; skipping the duplicate.");
                     continue;
                 }
                 MarketItem old = previous.get(fresh.id());
@@ -74,7 +69,7 @@ public final class MarketManager {
         return added;
     }
 
-    /** One key per physical item: lowercased, with bare vanilla ids namespaced to {@code minecraft:}. */
+    // one key per physical item
     static String canonical(String id) {
         String lower = id.trim().toLowerCase(Locale.ROOT);
         return lower.contains(":") ? lower : "minecraft:" + lower;
@@ -84,10 +79,7 @@ public final class MarketManager {
         return id == null ? null : byId.get(id);
     }
 
-    /**
-     * {@link #get}, but forgiving of how a person types an id: case, and a missing {@code minecraft:}
-     * namespace ({@code /bazaar price diamond}).
-     */
+    /** {@link #get}, but ignoring case and a missing {@code minecraft:} namespace. */
     public MarketItem lookup(String typed) {
         MarketItem exact = get(typed);
         if (exact != null || typed == null) {
@@ -114,7 +106,6 @@ public final class MarketManager {
         return id == null ? null : categories.get(id);
     }
 
-    /** Items belonging to a category, in config order (for the category grid). */
     public List<MarketItem> itemsIn(String categoryId) {
         List<MarketItem> out = new ArrayList<>();
         for (MarketItem item : byId.values()) {
@@ -125,10 +116,6 @@ public final class MarketManager {
         return out;
     }
 
-    /**
-     * Items shown directly on a category's own grid: everything for a flat category, or only the
-     * un-grouped leftovers for a grouped one (grouped items live behind their group icon instead).
-     */
     public List<MarketItem> ungroupedItemsIn(String categoryId) {
         List<MarketItem> out = new ArrayList<>();
         for (MarketItem item : byId.values()) {
@@ -139,7 +126,6 @@ public final class MarketManager {
         return out;
     }
 
-    /** Items in one group of a category, in config order (for the group grid). */
     public List<MarketItem> itemsInGroup(String categoryId, String groupId) {
         List<MarketItem> out = new ArrayList<>();
         if (groupId == null) {
@@ -153,13 +139,10 @@ public final class MarketManager {
         return out;
     }
 
-    // ------------------------------------------------------------------ tick
-
-    /** Reversion + stat bookkeeping for every item. Main thread. */
+    /** Reversion and stat bookkeeping. Main thread. */
     public void tick() {
         for (MarketItem item : byId.values()) {
-            // A frozen item holds exactly where the admin put it: no reversion, no EMA drift.
-            // The volume ring still ticks so stale hours keep dropping off its 24h stats.
+            // frozen items don't revert, but the volume ring still ticks so stale hours drop off
             if (!item.frozen()) {
                 double reverted = PricingEngine.revert(item);
                 if (reverted != item.mid()) {
@@ -183,12 +166,8 @@ public final class MarketManager {
     }
 
     /**
-     * Capture the dirty items' persisted values and clear their flags in one main-thread pass.
-     *
-     * <p>Capturing and clearing together is the point: clearing from the writer thread meant a trade
-     * landing between the read and the clear had its flag wiped, so that price change was never
-     * written and silently reverted on the next restart. Anything changed after this call simply
-     * flags itself dirty again and goes out with the next flush.
+     * Capture dirty items and clear their flags in one main-thread pass. Don't clear from the writer
+     * thread: a trade between read and clear would lose its write.
      */
     public List<MarketState> drainDirtyState() {
         List<MarketState> out = new ArrayList<>();
@@ -201,7 +180,7 @@ public final class MarketManager {
         return out;
     }
 
-    /** Detached copies of every item, for the history snapshot writer. Main thread. */
+    /** Detached copies of every item for the history writer. Main thread. */
     public List<MarketState> allState() {
         List<MarketState> out = new ArrayList<>(byId.size());
         for (MarketItem item : byId.values()) {
@@ -210,7 +189,7 @@ public final class MarketManager {
         return out;
     }
 
-    /** Re-flag items whose write failed, so a transient database error retries instead of losing state. */
+    /** Re-flag items whose write failed so it is retried. */
     public void remarkDirty(Collection<String> ids) {
         for (String id : ids) {
             MarketItem item = byId.get(id);

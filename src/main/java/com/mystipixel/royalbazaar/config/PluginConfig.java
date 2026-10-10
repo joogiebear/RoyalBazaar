@@ -13,11 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-/**
- * Wraps {@code config.yml} plus the {@code categories/} folder. On first run the default config and
- * the bundled category files are written out; thereafter everything is user-editable and
- * hot-reloadable via {@code /bazaar reload}.
- */
+/** Wraps {@code config.yml} and the {@code categories/} folder, writing the defaults on first run. */
 public final class PluginConfig {
 
     private static final String[] DEFAULT_CATEGORIES = {"farming.yml", "mining.yml", "combat.yml", "oddities.yml", "woods_fishes.yml"};
@@ -33,8 +29,6 @@ public final class PluginConfig {
     public void reload() {
         plugin.reloadConfig();
     }
-
-    // ---- config.yml ----
 
     public long tickIntervalTicks() {
         return Math.max(20L, plugin.getConfig().getLong("engine.tick-interval-seconds", 60L) * 20L);
@@ -57,10 +51,7 @@ public final class PluginConfig {
         return plugin.getConfig().getDouble("engine.trend-ema-alpha", 0.2);
     }
 
-    /**
-     * Category that {@code /bazaar} opens directly. Null falls back to the first configured category,
-     * since the category rail is the navigation and there is no separate landing menu.
-     */
+    /** Category that {@code /bazaar} opens directly; null means the first configured category. */
     public String defaultCategory() {
         String id = plugin.getConfig().getString("default-category", "");
         return id == null || id.isBlank() ? null : id;
@@ -86,9 +77,7 @@ public final class PluginConfig {
         return s != null ? s : plugin.getConfig().createSection("storage");
     }
 
-    // ---- categories/ ----
-
-    /** Load every {@code categories/*.yml} into a {@link CategoryConfig}, ordered by their {@code slot}. */
+    /** Every {@code categories/*.yml}, ordered by {@code slot}. */
     public List<CategoryConfig> loadCategories() {
         List<CategoryConfig> out = new ArrayList<>();
         File dir = new File(plugin.getDataFolder(), "categories");

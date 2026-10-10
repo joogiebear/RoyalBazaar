@@ -4,10 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
-/**
- * Small helper around Adventure so the rest of the plugin keeps using friendly legacy '&' colour
- * strings from config while producing modern {@link Component}s.
- */
+/** Turns legacy '&' colour strings from config into Adventure {@link Component}s. */
 public final class Text {
 
     private static final LegacyComponentSerializer AMP = LegacyComponentSerializer.legacyAmpersand();

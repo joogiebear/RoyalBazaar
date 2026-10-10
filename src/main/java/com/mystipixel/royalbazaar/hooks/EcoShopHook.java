@@ -12,15 +12,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * Reads EcoShop's per-item prices so RoyalBazaar can anchor to them (the eco-suite's single source of
- * truth for an item's value). EcoShop brackets each item with a {@code buy.value} (what a player pays
- * the NPC — the natural ceiling) and a {@code sell.value} (what the NPC pays the player — the natural
- * floor). We parse {@code plugins/EcoShop/categories/**.yml} (recursively — admins file categories into
- * subfolders) once at load; if EcoShop is absent this hook is simply empty and every {@code auto}/
- * {@code npc_*} option falls back to its config default.
- *
- * <p>This is a read-only, best-effort file parse — RoyalBazaar never writes EcoShop, and a parse miss
- * for one item never blocks loading.
+ * Reads EcoShop's NPC prices ({@code buy.value} is the natural ceiling, {@code sell.value} the floor)
+ * from {@code plugins/EcoShop/categories/**.yml} once at load. Read-only and best-effort; when EcoShop
+ * is absent every {@code auto}/{@code npc_*} option falls back to its config default.
  */
 public final class EcoShopHook {
 
@@ -28,15 +22,13 @@ public final class EcoShopHook {
     public record ShopPrice(Double buy, Double sell) {
     }
 
-    /** EcoShop price types that mean the Vault economy. */
     private static final Set<String> COIN_TYPES = Set.of("coins", "coin", "money", "vault");
 
     private final boolean present;
     private final Map<String, ShopPrice> byId = new HashMap<>();
 
     public EcoShopHook(File pluginsFolder, Logger logger) {
-        // Read EcoShop's config files directly — this doesn't require EcoShop to be *enabled* yet
-        // (RoyalBazaar may enable before it), only that its category folder exists on disk.
+        // read the files directly: RoyalBazaar may enable before EcoShop
         File dir = new File(pluginsFolder, "EcoShop/categories");
         this.present = dir.isDirectory();
         if (present) {
@@ -58,8 +50,6 @@ public final class EcoShopHook {
         return p == null ? null : p.sell();
     }
 
-    // ------------------------------------------------------------------ loading
-
     private void load(File dir, Logger logger) {
         List<File> files = new ArrayList<>();
         collect(dir, files);
@@ -79,16 +69,12 @@ public final class EcoShopHook {
                 byId.put(normalize(String.valueOf(lookup)), new ShopPrice(buy, sell));
             }
         }
-        logger.info("EcoShop detected — anchored prices available for " + byId.size() + " items"
+        logger.info("EcoShop detected: anchored prices available for " + byId.size() + " items"
                 + " (from " + files.size() + " category file(s)).");
     }
 
-    /**
-     * Gather category files recursively. EcoShop lets an admin file categories into subfolders
-     * (commonly all under {@code categories/npc/}), so a flat listing finds nothing and
-     * every {@code base_price: auto} silently falls back — hence the recursion.
-     * Files starting with {@code _} are EcoShop's own examples and are skipped.
-     */
+    // recursive: admins often file categories into subfolders (categories/npc/). Files starting
+    // with _ are EcoShop's own examples.
     private void collect(File dir, List<File> out) {
         File[] entries = dir.listFiles();
         if (entries == null) {
@@ -103,10 +89,7 @@ public final class EcoShopHook {
         }
     }
 
-    /**
-     * Pull {@code value} out of a {@code buy:}/{@code sell:} sub-map. A price in anything but coins
-     * (XP, levels, an EcoBits currency) says nothing about a Vault price, so it is ignored.
-     */
+    // non-coin prices (XP, levels, EcoBits) say nothing about a Vault price, so they're ignored
     private Double valueOf(Object side) {
         if (side instanceof Map<?, ?> m) {
             Object type = m.get("type");
@@ -128,10 +111,7 @@ public final class EcoShopHook {
         return null;
     }
 
-    /**
-     * Canonical key for matching a RoyalBazaar id against an EcoShop {@code item:} lookup: first token
-     * only (drop item modifiers), lowercased, vanilla materials namespaced to {@code minecraft:}.
-     */
+    // first token only (drops item modifiers), lowercased, vanilla namespaced to minecraft:
     private String normalize(String lookup) {
         String first = lookup.trim().split("\\s+")[0].toLowerCase(Locale.ROOT);
         if (first.contains(":")) {
