@@ -30,6 +30,11 @@ trading:
   # without npc_floor / npc_ceiling. Outside it, players can buy from one and sell to the other at a
   # profit. Turn off only if the two shops deliberately disagree.
   npc-arbitrage-guard: true
+  # When EcoShop's prices leave an item no arbitrage-free range (for example EcoShop pays more than
+  # the item's ceiling allows), the guard can't hold. A console warning names the item either way.
+  #   keep - list it with its configured floor and ceiling, unguarded
+  #   skip - don't list it until the EcoShop entry or the floor/ceiling is fixed
+  npc-arbitrage-conflict: keep
 
 storage:
   # SQLITE (default, single server) or MYSQL (shared across a network).

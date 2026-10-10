@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 
 /** Wraps {@code config.yml} and the {@code categories/} folder, writing the defaults on first run. */
@@ -62,6 +63,16 @@ public final class PluginConfig {
         return plugin.getConfig().getBoolean("trading.npc-arbitrage-guard", true);
     }
 
+    /** Unlist items whose EcoShop prices leave no arbitrage-free range, instead of listing them unguarded. */
+    public boolean skipNpcArbitrageConflicts() {
+        return "skip".equals(npcArbitrageConflict());
+    }
+
+    // keep | skip; anything else is reported by ConfigValidator and treated as keep
+    public String npcArbitrageConflict() {
+        return plugin.getConfig().getString("trading.npc-arbitrage-conflict", "keep").trim().toLowerCase(Locale.ROOT);
+    }
+
     /** Largest quantity one buy may request. 0 or less means no limit. */
     public long maxOrder() {
         return plugin.getConfig().getLong("trading.max-order", 2304L);
@@ -89,7 +100,8 @@ public final class PluginConfig {
         for (File file : files) {
             String id = file.getName().substring(0, file.getName().length() - 4);
             YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
-            out.add(CategoryConfig.load(id, cfg, plugin.getLogger(), npcArbitrageGuard()));
+            out.add(CategoryConfig.load(id, cfg, plugin.getLogger(), npcArbitrageGuard(),
+                    skipNpcArbitrageConflicts()));
         }
         out.sort((a, b) -> Integer.compare(a.slot(), b.slot()));
         return out;

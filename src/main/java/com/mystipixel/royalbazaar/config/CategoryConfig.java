@@ -4,6 +4,8 @@ import com.mystipixel.royalbazaar.hooks.EcoShopHook;
 import com.mystipixel.royalbazaar.market.MarketItem;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -44,10 +46,11 @@ public final class CategoryConfig {
     private final ConfigurationSection itemsSection;
     private final Logger logger;
     private final boolean npcArbitrageGuard;
+    private final boolean skipNpcConflicts;
 
     private CategoryConfig(String id, String displayName, String icon, int slot, Defaults defaults,
                            List<Group> groups, ConfigurationSection itemsSection, Logger logger,
-                           boolean npcArbitrageGuard) {
+                           boolean npcArbitrageGuard, boolean skipNpcConflicts) {
         this.id = id;
         this.displayName = displayName;
         this.icon = icon;
@@ -57,17 +60,18 @@ public final class CategoryConfig {
         this.itemsSection = itemsSection;
         this.logger = logger;
         this.npcArbitrageGuard = npcArbitrageGuard;
+        this.skipNpcConflicts = skipNpcConflicts;
     }
 
     public static CategoryConfig load(String id, ConfigurationSection root, Logger logger,
-                                      boolean npcArbitrageGuard) {
+                                      boolean npcArbitrageGuard, boolean skipNpcConflicts) {
         String display = root.getString("name", id);
         String icon = root.getString("icon", "minecraft:chest");
         int slot = root.getInt("slot", 0);
         Defaults defaults = Defaults.from(root.getConfigurationSection("defaults"));
         return new CategoryConfig(id, display, icon, slot, defaults,
                 loadGroups(root.getConfigurationSection("groups")),
-                root.getConfigurationSection("items"), logger, npcArbitrageGuard);
+                root.getConfigurationSection("items"), logger, npcArbitrageGuard, skipNpcConflicts);
     }
 
     // declared order wins; ties keep config order
@@ -118,7 +122,8 @@ public final class CategoryConfig {
      * Build every configured item with defaults and EcoShop anchoring ({@code base_price: auto} uses the
      * EcoShop buy value, {@code npc_floor}/{@code npc_ceiling} pin to its sell/buy values, falling back to
      * the {@code *_pct} defaults). With {@code trading.npc-arbitrage-guard} on, items EcoShop also trades
-     * are kept inside its bracket. Items with unworkable tuning are skipped with a warning.
+     * are kept inside its bracket. Items with unworkable tuning are skipped with a warning, as are items
+     * EcoShop leaves no safe range for when {@code trading.npc-arbitrage-conflict} is {@code skip}.
      */
     public List<MarketItem> buildItems(EcoShopHook shop) {
         List<MarketItem> out = new ArrayList<>();
@@ -157,6 +162,9 @@ public final class CategoryConfig {
             double reversion = is.getDouble("reversion_rate", defaults.reversionRate());
             if (npcArbitrageGuard) {
                 double[] bracketed = bracket(shop, itemId, spread, floor, ceiling, key);
+                if (bracketed == null) {
+                    continue; // bracket already logged
+                }
                 floor = bracketed[0];
                 ceiling = bracketed[1];
             }
@@ -183,28 +191,62 @@ public final class CategoryConfig {
         return out;
     }
 
-    // narrow [floor, ceiling] so mid·(1+spread/2) >= NPC sell and mid·(1-spread/2) <= NPC buy at every mid
+    // narrow [floor, ceiling] so mid·(1+spread/2) >= NPC sell and mid·(1-spread/2) <= NPC buy at every mid.
+    // Each EcoShop price bounds only its own side. Returns null when the item should not be listed.
     private double[] bracket(EcoShopHook shop, String itemId, double spread, double floor, double ceiling,
                              String key) {
-        if (spread < 0 || spread >= 1) {
+        if (spread < 0 || spread >= 1 || !(floor < ceiling)) {
             return new double[]{floor, ceiling};   // tuningProblem reports it
         }
-        double lo = floor;
-        double hi = ceiling;
-        Double npcSell = shop.sellValue(itemId);
-        Double npcBuy = shop.buyValue(itemId);
-        if (npcSell != null && npcSell > 0) {
-            lo = Math.max(lo, npcSell / (1.0 + spread / 2.0));
+        Double npcSell = positiveOrNull(shop.sellValue(itemId));
+        Double npcBuy = positiveOrNull(shop.buyValue(itemId));
+        double[] bounds = npcBounds(spread, floor, ceiling, npcBuy, npcSell);
+        if (bounds[0] < bounds[1]) {
+            return bounds;
         }
-        if (npcBuy != null && npcBuy > 0) {
-            hi = Math.min(hi, npcBuy / (1.0 - spread / 2.0));
+
+        String where = "[category " + id + "] item '" + key + "' (" + itemId + "): ";
+        String why = "EcoShop's prices (buy " + fmt(npcBuy) + ", sell " + fmt(npcSell) + ") and spread "
+                + fmt(spread) + " need the mid between " + fmt(bounds[0]) + " and " + fmt(bounds[1])
+                + ", which leaves no arbitrage-free range inside floor " + fmt(floor) + " and ceiling "
+                + fmt(ceiling) + ".";
+        if (skipNpcConflicts) {
+            logger.warning(where + why + " Not listing it (trading.npc-arbitrage-conflict: skip)."
+                    + " Fix the EcoShop entry or the item's floor/ceiling.");
+            return null;
         }
-        if (lo >= hi) {
-            logger.warning("[category " + id + "] item '" + key + "': EcoShop's buy/sell prices leave no"
-                    + " arbitrage-free range for it, so it is not bracketed. Check its EcoShop entry.");
-            return new double[]{floor, ceiling};
+        List<String> open = new ArrayList<>();
+        if (npcSell != null && floor * (1.0 + spread / 2.0) < npcSell) {
+            open.add("buy here and sell to EcoShop");
         }
+        if (npcBuy != null && ceiling * (1.0 - spread / 2.0) > npcBuy) {
+            open.add("buy from EcoShop and sell here");
+        }
+        logger.warning(where + why + " It stays listed with its configured floor and ceiling and no guard,"
+                + " so players can " + String.join(", or ", open) + " at a profit. Fix the EcoShop entry or"
+                + " the item's floor/ceiling, or set trading.npc-arbitrage-conflict: skip to unlist it.");
+        return new double[]{floor, ceiling};
+    }
+
+    // {lowest, highest} mid at which the bazaar's prices stay inside EcoShop's; a null price leaves that side alone
+    static double[] npcBounds(double spread, double floor, double ceiling, Double npcBuy, Double npcSell) {
+        double lo = npcSell == null ? floor : Math.max(floor, npcSell / (1.0 + spread / 2.0));
+        double hi = npcBuy == null ? ceiling : Math.min(ceiling, npcBuy / (1.0 - spread / 2.0));
         return new double[]{lo, hi};
+    }
+
+    private static Double positiveOrNull(Double value) {
+        return value != null && value > 0 ? value : null;
+    }
+
+    private static String fmt(Double value) {
+        if (value == null) {
+            return "none";
+        }
+        if (!Double.isFinite(value)) {
+            return String.valueOf(value);
+        }
+        return BigDecimal.valueOf(value).setScale(4, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString();
     }
 
     // why this tuning can't make a working market, or null if it can

@@ -221,6 +221,10 @@ never falls below what the NPC pays, and its sell price never rises above what t
 Outside that range a player could buy from one shop and sell to the other at a profit. EcoShop
 prices in anything other than coins are ignored.
 
+If EcoShop's prices leave an item no such range inside its floor and ceiling, the console warns with
+the item and the conflicting prices. `trading.npc-arbitrage-conflict: keep` (the default) still lists
+it with its configured floor and ceiling, unguarded; `skip` leaves it out of the bazaar until fixed.
+
 > **Tuning note:** anchoring `base_price` to EcoShop's *buy* value puts the item at the **top** of its
 > range, so the mid can then barely rise. If you want movement both ways, anchor the base nearer
 > the midpoint of EcoShop's buy/sell.
