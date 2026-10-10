@@ -2,11 +2,14 @@ package com.mystipixel.royalbazaar.config;
 
 import com.mystipixel.royalbazaar.hooks.EcoShopHook;
 import com.mystipixel.royalbazaar.market.MarketItem;
+import com.mystipixel.royalbazaar.market.TradeMode;
+import com.mystipixel.royalbazaar.market.TradeSide;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -158,6 +161,15 @@ public final class CategoryConfig {
                 continue;
             }
 
+            TradeMode tradeMode;
+            try {
+                tradeMode = TradeMode.valueOf(is.getString("trade_mode", "both").trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException invalid) {
+                logger.warning("[category " + id + "] item '" + key
+                        + "' has invalid trade_mode; expected both, buy_only or sell_only - skipping.");
+                continue;
+            }
+
             double base = resolveBase(is, itemId, shop, key);
             if (base <= 0) {
                 continue; // resolveBase already logged
@@ -179,7 +191,7 @@ public final class CategoryConfig {
             double elasticity = is.getDouble("elasticity", defaults.elasticity());
             double reversion = is.getDouble("reversion_rate", defaults.reversionRate());
             if (npcArbitrageGuard) {
-                double[] bracketed = bracket(shop, itemId, spread, floor, ceiling, key);
+                double[] bracketed = bracket(shop, itemId, spread, floor, ceiling, tradeMode);
                 floor = bracketed[0];
                 ceiling = bracketed[1];
             }
@@ -199,7 +211,8 @@ public final class CategoryConfig {
                     elasticity,
                     reversion,
                     floor,
-                    ceiling);
+                    ceiling,
+                    tradeMode);
             item.setPinnedSlot(slotOf(is));
             out.add(item);
         }
@@ -209,11 +222,11 @@ public final class CategoryConfig {
     /**
      * Narrow {@code [floor, ceiling]} so that, at every mid the item can reach, the bazaar's buy price
      * ({@code mid·(1+spread/2)}) is at least EcoShop's sell value and its sell price
-     * ({@code mid·(1−spread/2)}) at most EcoShop's buy value. Leaves the range alone, with a warning,
-     * if EcoShop's own prices leave no room for it.
+     * ({@code mid·(1−spread/2)}) at most EcoShop's buy value, for enabled directions only.
+     * An empty intersection is rejected by tuningProblem; never silently disable the guard.
      */
     private double[] bracket(EcoShopHook shop, String itemId, double spread, double floor, double ceiling,
-                             String key) {
+                             TradeMode tradeMode) {
         if (spread < 0 || spread >= 1) {
             return new double[]{floor, ceiling};   // tuningProblem reports it
         }
@@ -221,16 +234,11 @@ public final class CategoryConfig {
         double hi = ceiling;
         Double npcSell = shop.sellValue(itemId);
         Double npcBuy = shop.buyValue(itemId);
-        if (npcSell != null && npcSell > 0) {
+        if (tradeMode.allows(TradeSide.BUY) && npcSell != null && npcSell > 0) {
             lo = Math.max(lo, npcSell / (1.0 + spread / 2.0));
         }
-        if (npcBuy != null && npcBuy > 0) {
+        if (tradeMode.allows(TradeSide.SELL) && npcBuy != null && npcBuy > 0) {
             hi = Math.min(hi, npcBuy / (1.0 - spread / 2.0));
-        }
-        if (lo >= hi) {
-            logger.warning("[category " + id + "] item '" + key + "': EcoShop's buy/sell prices leave no"
-                    + " arbitrage-free range for it, so it is not bracketed. Check its EcoShop entry.");
-            return new double[]{floor, ceiling};
         }
         return new double[]{lo, hi};
     }

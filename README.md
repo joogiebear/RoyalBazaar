@@ -169,6 +169,54 @@ items:
 Adding an item is one block. Removing it is deleting the block. The `defaults:` block is what stops
 300 items from repeating the same five tuning lines.
 
+### One-way items
+
+Set `trade_mode` **per item**, from the player's perspective: `both` (default),
+`buy_only`, or `sell_only`. Values are case-insensitive. Omitted settings keep existing
+markets two-way; an invalid value skips the listing with a warning instead of enabling trades.
+For example (prices and caps are illustrative, not changes to the bundled catalog):
+
+```yaml
+items:
+  rotten_flesh:
+    item: "minecraft:rotten_flesh"
+    base_price: 0.5
+    trade_mode: sell_only
+    floor_pct: 0.2
+    ceiling_pct: 1.0
+  stone_bricks:
+    item: "minecraft:stone_bricks"
+    base_price: 2.0
+    trade_mode: buy_only
+    floor_pct: 1.0
+    ceiling_pct: 1.5
+```
+
+Disabled directions are refused by the trade service before money, items, price, volume or
+transaction records change. Sell-all skips buy-only listings, and fill-inventory returns zero
+for sell-only listings. Trade buttons and quantity prompts for unavailable directions are hidden
+or refused, including clicks from menus opened before `/bazaar reload`. Price commands, menu
+quotes and PlaceholderAPI show the configurable `price-unavailable` text (`N/A`) for that side;
+group buy ranges exclude sell-only items. Existing custom menus work without new conditions.
+
+The pricing formula, spread and reversion are unchanged. Selling into a sell-only market lowers
+its mid; buying from a buy-only market raises it. Reversion still brings the mid toward base.
+Sell-only items are money sources; buy-only items are money sinks. Set prices, elasticity and
+reversion according to production rates and review recipes and other shops: a direction setting
+cannot prevent every cross-item conversion loop. **Floor/ceiling bound the post-trade mid, not
+the marginal prices inside an order**; large orders can cost more per unit than the ceiling quote
+or pay less than the floor quote. The existing `trading.max-order` limits purchases.
+
+The EcoShop arbitrage guard constrains only executable routes: a buy-enabled listing's floor
+prevents buying here and reselling to the NPC; a sell-enabled listing's ceiling prevents buying
+at the NPC and selling here. `both` applies both constraints. If the relevant constraints leave
+no valid range, the listing is skipped; protection is never silently dropped. Explicit
+`npc_floor`, `npc_ceiling` and `base_price: auto` anchors keep their existing meaning.
+
+`/bazaar reload` applies mode changes immediately and preserves live prices (re-clamped to new
+bounds), volume, freezes and pending writes. Modes live in category config, so no database
+migration is needed. New messages have fallbacks for existing `messages.yml` files.
+
 ### The spread is your inflation sink
 
 Buy price is `mid × (1 + spread/2)`, sell price is `mid × (1 − spread/2)`. Every round trip through

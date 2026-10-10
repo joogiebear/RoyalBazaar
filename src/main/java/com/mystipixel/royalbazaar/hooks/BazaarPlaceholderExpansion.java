@@ -3,6 +3,8 @@ package com.mystipixel.royalbazaar.hooks;
 import com.mystipixel.royalbazaar.market.MarketItem;
 import com.mystipixel.royalbazaar.market.MarketManager;
 import com.mystipixel.royalbazaar.market.PricingEngine;
+import com.mystipixel.royalbazaar.market.TradeSide;
+import com.mystipixel.royalbazaar.message.MessageManager;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -18,8 +20,14 @@ public final class BazaarPlaceholderExpansion extends PlaceholderExpansion {
     private final MarketManager market;
     private final VaultHook vault;
     private final String version;
+    private final MessageManager messages;
 
     public BazaarPlaceholderExpansion(MarketManager market, VaultHook vault, String version) {
+        this(market, vault, version, null);
+    }
+
+    public BazaarPlaceholderExpansion(MarketManager market, VaultHook vault, String version, MessageManager messages) {
+        this.messages = messages;
         this.market = market;
         this.vault = vault;
         this.version = version;
@@ -45,6 +53,10 @@ public final class BazaarPlaceholderExpansion extends PlaceholderExpansion {
         return true;
     }
 
+    private String unavailablePrice() {
+        return messages == null ? "N/A" : messages.get("price-unavailable", "N/A");
+    }
+
     @Override
     public String onRequest(OfflinePlayer player, @NotNull String params) {
         int sep = params.indexOf('_');
@@ -58,8 +70,10 @@ public final class BazaarPlaceholderExpansion extends PlaceholderExpansion {
             return "";
         }
         return switch (type) {
-            case "buy" -> vault.format(PricingEngine.buyPrice(item));
-            case "sell" -> vault.format(PricingEngine.sellPrice(item));
+            case "buy" -> item.tradeMode().allows(TradeSide.BUY)
+                    ? vault.format(PricingEngine.buyPrice(item)) : unavailablePrice();
+            case "sell" -> item.tradeMode().allows(TradeSide.SELL)
+                    ? vault.format(PricingEngine.sellPrice(item)) : unavailablePrice();
             case "mid" -> vault.format(item.mid());
             // Plain-text percentages (no colour codes): scoreboards and holograms style themselves.
             case "change24h" -> item.midYesterday() <= 0 ? "0.0%"

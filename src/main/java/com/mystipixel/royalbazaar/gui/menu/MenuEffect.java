@@ -1,9 +1,11 @@
 package com.mystipixel.royalbazaar.gui.menu;
 
+import com.mystipixel.royalbazaar.market.TradeSide;
 import org.bukkit.configuration.ConfigurationSection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -16,6 +18,15 @@ import java.util.Map;
  * {@code args} values may contain {@code %placeholders%}; they are resolved by the dispatcher.
  */
 public record MenuEffect(String id, Map<String, Object> args) {
+
+    /** Direction needed by this action, including navigation and quantity prompts. */
+    public TradeSide tradeSide() {
+        return switch (id.toLowerCase(Locale.ROOT)) {
+            case "rbazaar_buy", "rbazaar_open_buy", "rbazaar_buy_prompt", "rbazaar_buy_amount_prompt" -> TradeSide.BUY;
+            case "rbazaar_sell", "rbazaar_sell_prompt" -> TradeSide.SELL;
+            default -> null; // sell-all filters its mixed scope in the service
+        };
+    }
 
     public String argString(String key, String def) {
         Object v = args.get(key);

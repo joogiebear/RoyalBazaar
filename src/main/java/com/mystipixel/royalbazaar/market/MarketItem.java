@@ -22,6 +22,7 @@ public final class MarketItem {
     private final double reversionRate; // per tick, 0..1
     private final double floor;         // absolute = basePrice * floor_pct
     private final double ceiling;       // absolute = basePrice * ceiling_pct
+    private final TradeMode tradeMode;
 
     // ---- runtime state (mutable, persisted) ----
     private double mid;
@@ -55,6 +56,13 @@ public final class MarketItem {
 
     public MarketItem(String id, String categoryId, String groupId, String displayName, double basePrice,
                       double spread, double elasticity, double reversionRate, double floor, double ceiling) {
+        this(id, categoryId, groupId, displayName, basePrice, spread, elasticity, reversionRate,
+                floor, ceiling, TradeMode.BOTH);
+    }
+
+    public MarketItem(String id, String categoryId, String groupId, String displayName, double basePrice,
+                      double spread, double elasticity, double reversionRate, double floor, double ceiling,
+                      TradeMode tradeMode) {
         this.id = id;
         this.categoryId = categoryId;
         this.groupId = groupId;
@@ -65,6 +73,7 @@ public final class MarketItem {
         this.reversionRate = reversionRate;
         this.floor = floor;
         this.ceiling = ceiling;
+        this.tradeMode = java.util.Objects.requireNonNull(tradeMode);
         // Seed defaults; overwritten by loadState() if a persisted row exists. Clamped because the
         // floor/ceiling can sit above or below base (EcoShop bracketing, custom *_pct values).
         this.mid = PricingEngine.clamp(basePrice, floor, ceiling);
@@ -115,6 +124,7 @@ public final class MarketItem {
     public double reversionRate() { return reversionRate; }
     public double floor() { return floor; }
     public double ceiling() { return ceiling; }
+    public TradeMode tradeMode() { return tradeMode; }
 
     // ---- state accessors ----
     public double mid() { return mid; }

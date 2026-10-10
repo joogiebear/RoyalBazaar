@@ -10,6 +10,7 @@ no-permission: "&cNo permission."
 reloaded: "&aRoyalBazaar reloaded."
 price-usage: "&cUsage: /bazaar price <item>"
 unknown-item: "&cUnknown item: {item}"
+price-unavailable: "N/A"
 price-line: "&e{item}&7: buy &a${buy} &7sell &e${sell} &7(mid {mid})"
 
 prompt-amount: "&eType an amount in chat &7(or 'cancel')&e."
@@ -18,6 +19,9 @@ not-a-number: "&cNot a number."
 amount-positive: "&cAmount must be positive."
 
 trade:
+  reasons:
+    buy-disabled: "You cannot buy this item."
+    sell-disabled: "You cannot sell this item."
   bought: "&aBought &f{amount} &afor &e${total}"
   sold: "&aSold &f{amount} &afor &e${total}"
   done: "&aDone: &f{amount} &7for &e${total}"

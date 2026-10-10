@@ -9,6 +9,7 @@ import com.mystipixel.royalbazaar.gui.menu.MenuTemplate;
 import com.mystipixel.royalbazaar.hooks.EcoHook;
 import com.mystipixel.royalbazaar.market.MarketItem;
 import com.mystipixel.royalbazaar.market.MarketManager;
+import com.mystipixel.royalbazaar.market.TradeSide;
 import com.mystipixel.royalbazaar.service.BazaarService;
 import com.mystipixel.royalbazaar.util.ItemNames;
 import com.mystipixel.royalbazaar.util.Text;
@@ -212,6 +213,10 @@ public final class GuiManager {
     public void openBuy(Player player, String itemId) {
         MarketItem item = itemId == null ? null : market.get(itemId);
         if (item == null) {
+            return;
+        }
+        if (!item.tradeMode().allows(TradeSide.BUY)) {
+            openProduct(player, itemId);
             return;
         }
         MenuTemplate tmpl = menus.get("bazaar_buy");
@@ -423,8 +428,14 @@ public final class GuiManager {
             if (slot.index() < 0 || slot.index() >= inv.getSize()) {
                 continue;
             }
+            List<MenuEffect> left = resolveEffects(slot.leftClick(), ph);
+            List<MenuEffect> right = resolveEffects(slot.rightClick(), ph);
+            if (left.isEmpty() && right.isEmpty()
+                    && (!slot.leftClick().isEmpty() || !slot.rightClick().isEmpty())) {
+                continue; // leave the filler in place when this button has no available action
+            }
             inv.setItem(slot.index(), slot.item().build(eco, ph, slot.lore()));
-            view.bind(slot.index(), resolveEffects(slot.leftClick(), ph), resolveEffects(slot.rightClick(), ph));
+            view.bind(slot.index(), left, right);
         }
     }
 
@@ -562,15 +573,23 @@ public final class GuiManager {
      * so effects on both fixed slots (product buy/sell buttons) and generated grid items get the
      * concrete item id (and any other placeholder) baked in before they're bound to a slot.
      */
-    private List<MenuEffect> resolveEffects(List<MenuEffect> effects, Map<String, String> ph) {
+    List<MenuEffect> resolveEffects(List<MenuEffect> effects, Map<String, String> ph) {
         if (effects == null || effects.isEmpty()) {
-            return effects;
+            return List.of();
         }
         List<MenuEffect> out = new java.util.ArrayList<>(effects.size());
         for (MenuEffect e : effects) {
             Map<String, Object> args = new HashMap<>(e.args());
             args.replaceAll((k, v) -> resolveValue(v, ph));
-            out.add(new MenuEffect(e.id(), args));
+            MenuEffect resolved = new MenuEffect(e.id(), args);
+            TradeSide side = resolved.tradeSide();
+            if (side != null) {
+                MarketItem target = market.get(resolved.argString("item", ph.get("rbazaar_item")));
+                if (target == null || !target.tradeMode().allows(side)) {
+                    return List.of(); // remove the whole click, including its success sound
+                }
+            }
+            out.add(resolved);
         }
         return out;
     }

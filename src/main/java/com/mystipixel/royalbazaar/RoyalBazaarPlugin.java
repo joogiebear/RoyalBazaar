@@ -157,7 +157,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         scheduleTasks();
 
         if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            this.placeholderExpansion = new BazaarPlaceholderExpansion(market, vault, getPluginMeta().getVersion());
+            this.placeholderExpansion = new BazaarPlaceholderExpansion(market, vault, getPluginMeta().getVersion(), messages);
             placeholderExpansion.register();
             getLogger().info("Registered PlaceholderAPI expansion.");
         }

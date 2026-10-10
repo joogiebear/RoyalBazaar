@@ -6,6 +6,7 @@ import com.mystipixel.royalbazaar.gui.GuiManager;
 import com.mystipixel.royalbazaar.market.MarketItem;
 import com.mystipixel.royalbazaar.market.MarketManager;
 import com.mystipixel.royalbazaar.market.PricingEngine;
+import com.mystipixel.royalbazaar.market.TradeSide;
 import com.mystipixel.royalbazaar.service.BazaarService;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -71,8 +72,10 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
                         "&e{item}&7: buy &a${buy} &7sell &e${sell} &7(mid {mid})",
                         java.util.Map.of(
                                 "item", item.id(),
-                                "buy", fmt(PricingEngine.buyPrice(item)),
-                                "sell", fmt(PricingEngine.sellPrice(item)),
+                                "buy", item.tradeMode().allows(TradeSide.BUY)
+                                        ? fmt(PricingEngine.buyPrice(item)) : service.unavailablePrice(),
+                                "sell", item.tradeMode().allows(TradeSide.SELL)
+                                        ? fmt(PricingEngine.sellPrice(item)) : service.unavailablePrice(),
                                 "mid", fmt(item.mid())));
             }
             case "sellall" -> sellAll(sender, args);

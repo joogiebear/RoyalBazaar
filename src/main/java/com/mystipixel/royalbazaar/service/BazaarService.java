@@ -51,6 +51,34 @@ public final class BazaarService {
         this.config = config;
     }
 
+    /**
+     * Refuse unavailable directions before prompting or touching any economy/inventory state.
+     * Null means this direction is configured; buy/sell still validate the full transaction.
+     */
+    public TradeResult tradeRestriction(String itemId, TradeSide side) {
+        MarketItem item = market.get(itemId);
+        if (item == null) {
+            return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, side, itemId,
+                    message("trade.reasons.unknown-item", "Unknown item."));
+        }
+        if (!item.tradeMode().allows(side)) {
+            String reason = side == TradeSide.BUY
+                    ? message("trade.reasons.buy-disabled", "You cannot buy this item.")
+                    : message("trade.reasons.sell-disabled", "You cannot sell this item.");
+            return TradeResult.fail(TradeResult.Status.DISABLED, side, itemId, reason);
+        }
+        return null;
+    }
+
+    public String unavailablePrice() {
+        return message("price-unavailable", "N/A");
+    }
+
+    private String message(String key, String fallback) {
+        return plugin instanceof com.mystipixel.royalbazaar.RoyalBazaarPlugin rb && rb.messages() != null
+                ? rb.messages().get(key, fallback) : fallback;
+    }
+
     // ------------------------------------------------------------------ buy
 
 
@@ -59,10 +87,11 @@ public final class BazaarService {
     }
 
     public TradeResult buy(Player player, String itemId, long amount) {
-        MarketItem item = market.get(itemId);
-        if (item == null) {
-            return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, TradeSide.BUY, itemId, "Unknown item.");
+        TradeResult restriction = tradeRestriction(itemId, TradeSide.BUY);
+        if (restriction != null) {
+            return restriction;
         }
+        MarketItem item = market.get(itemId);
         if (amount <= 0) {
             return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId, "Invalid amount.");
         }
@@ -143,7 +172,12 @@ public final class BazaarService {
         long units = 0;
         double proceeds = 0;
         int blocked = 0;
-        for (MarketItem item : scope) {
+        for (MarketItem entry : scope) {
+            // A caller may still hold the pre-reload collection. Always use the current policy.
+            MarketItem item = market.get(entry.id());
+            if (item == null || !item.tradeMode().allows(TradeSide.SELL)) {
+                continue;
+            }
             if (eco.countHeld(player, item.id()) <= 0) {
                 continue;
             }
@@ -161,10 +195,11 @@ public final class BazaarService {
     }
 
     public TradeResult sell(Player player, String itemId, long amount) {
-        MarketItem item = market.get(itemId);
-        if (item == null) {
-            return TradeResult.fail(TradeResult.Status.UNKNOWN_ITEM, TradeSide.SELL, itemId, "Unknown item.");
+        TradeResult restriction = tradeRestriction(itemId, TradeSide.SELL);
+        if (restriction != null) {
+            return restriction;
         }
+        MarketItem item = market.get(itemId);
         if (item.frozen()) {
             return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.SELL, itemId,
                     "This item is temporarily frozen.");
@@ -216,7 +251,7 @@ public final class BazaarService {
      */
     public long fillAmount(Player player, String itemId) {
         MarketItem item = market.get(itemId);
-        if (item == null) {
+        if (item == null || !item.tradeMode().allows(TradeSide.BUY) || item.frozen()) {
             return 0;
         }
         ItemStack prototype = eco.resolve(itemId, 1);
@@ -329,13 +364,19 @@ public final class BazaarService {
         Map<String, String> p = new HashMap<>();
         p.put("rbazaar_item", item.id());
         p.put("rbazaar_item_display", displayNameFor(item));
-        p.put("rbazaar_buy_price", vault.formatPrice(PricingEngine.buyPrice(item)));
-        p.put("rbazaar_sell_price", vault.formatPrice(PricingEngine.sellPrice(item)));
+        p.put("rbazaar_buy_price", item.tradeMode().allows(TradeSide.BUY)
+                ? vault.formatPrice(PricingEngine.buyPrice(item)) : unavailablePrice());
+        p.put("rbazaar_sell_price", item.tradeMode().allows(TradeSide.SELL)
+                ? vault.formatPrice(PricingEngine.sellPrice(item)) : unavailablePrice());
         p.put("rbazaar_spread_pct", String.format("%.1f", item.spread() * 100));
-        p.put("rbazaar_buy_cost_1", vault.formatPrice(PricingEngine.buyCost(item, 1)));
-        p.put("rbazaar_buy_cost_64", vault.formatPrice(PricingEngine.buyCost(item, 64)));
-        p.put("rbazaar_sell_value_1", vault.formatPrice(PricingEngine.sellProceeds(item, 1)));
-        p.put("rbazaar_sell_value_64", vault.formatPrice(PricingEngine.sellProceeds(item, 64)));
+        p.put("rbazaar_buy_cost_1", item.tradeMode().allows(TradeSide.BUY)
+                ? vault.formatPrice(PricingEngine.buyCost(item, 1)) : unavailablePrice());
+        p.put("rbazaar_buy_cost_64", item.tradeMode().allows(TradeSide.BUY)
+                ? vault.formatPrice(PricingEngine.buyCost(item, 64)) : unavailablePrice());
+        p.put("rbazaar_sell_value_1", item.tradeMode().allows(TradeSide.SELL)
+                ? vault.formatPrice(PricingEngine.sellProceeds(item, 1)) : unavailablePrice());
+        p.put("rbazaar_sell_value_64", item.tradeMode().allows(TradeSide.SELL)
+                ? vault.formatPrice(PricingEngine.sellProceeds(item, 64)) : unavailablePrice());
         p.put("rbazaar_volume_24h", String.valueOf(item.volume().bought24h() + item.volume().sold24h()));
         p.put("rbazaar_change_24h", changePct(item));
         p.put("rbazaar_trend", trendArrow(item));
@@ -346,7 +387,8 @@ public final class BazaarService {
         if (viewer != null) {
             int held = eco.countHeld(viewer, item.id());
             p.put("rbazaar_held_amount", String.valueOf(held));
-            p.put("rbazaar_sell_value_all", vault.formatPrice(PricingEngine.sellProceeds(item, Math.max(1, held))));
+            p.put("rbazaar_sell_value_all", item.tradeMode().allows(TradeSide.SELL)
+                ? vault.formatPrice(PricingEngine.sellProceeds(item, Math.max(1, held))) : unavailablePrice());
         }
 
         // Where this item sits, so a product or buy menu can show a breadcrumb in its title. Without
@@ -392,15 +434,17 @@ public final class BazaarService {
         double weightedNow = 0;
         double weightedThen = 0;
         for (MarketItem item : items) {
-            double buy = PricingEngine.buyPrice(item);
-            min = Math.min(min, buy);
-            max = Math.max(max, buy);
+            if (item.tradeMode().allows(TradeSide.BUY)) {
+                double buy = PricingEngine.buyPrice(item);
+                min = Math.min(min, buy);
+                max = Math.max(max, buy);
+            }
             volume += item.volume().bought24h() + item.volume().sold24h();
             weightedNow += item.mid();
             weightedThen += item.midYesterday() > 0 ? item.midYesterday() : item.mid();
         }
-        p.put("rbazaar_group_min_buy", vault.formatPrice(min));
-        p.put("rbazaar_group_max_buy", vault.formatPrice(max));
+        p.put("rbazaar_group_min_buy", min == Double.MAX_VALUE ? unavailablePrice() : vault.formatPrice(min));
+        p.put("rbazaar_group_max_buy", min == Double.MAX_VALUE ? unavailablePrice() : vault.formatPrice(max));
         p.put("rbazaar_group_volume_24h", String.valueOf(volume));
 
         // Aggregate the group's move from the summed mids, so one cheap item can't swing the arrow.

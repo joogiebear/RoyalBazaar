@@ -1,6 +1,7 @@
 package com.mystipixel.royalbazaar.gui;
 
 import com.mystipixel.royalbazaar.market.TradeResult;
+import com.mystipixel.royalbazaar.market.TradeSide;
 import com.mystipixel.royalbazaar.message.MessageManager;
 import com.mystipixel.royalbazaar.service.BazaarService;
 import org.bukkit.entity.Player;
@@ -33,6 +34,12 @@ public final class AmountPrompt {
 
     public void begin(Player player, String itemId, boolean buy) {
         if (itemId == null) {
+            return;
+        }
+        TradeResult restriction = service.tradeRestriction(itemId, buy ? TradeSide.BUY : TradeSide.SELL);
+        if (restriction != null) {
+            messages.send(player, "trade.failed", "&c{reason}", Map.of("reason", restriction.message()));
+            gui.openProduct(player, itemId);
             return;
         }
         signInput.request(player,

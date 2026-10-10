@@ -44,6 +44,15 @@ public final class EffectDispatcher {
             return;
         }
         for (MenuEffect effect : effects) {
+            TradeSide side = effect.tradeSide();
+            if (side != null) {
+                TradeResult restriction = service.tradeRestriction(effect.argString("item", itemOf(player)), side);
+                if (restriction != null) {
+                    sendFeedback(player, restriction);
+                    gui.refresh(player);
+                    return; // a menu rendered before reload must not open a now-disabled prompt
+                }
+            }
             dispatch(player, effect);
         }
     }
