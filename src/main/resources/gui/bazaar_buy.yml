@@ -95,7 +95,7 @@ slots:
 
   - item: oak_sign name:"&aCustom Amount"
     lore:
-      - "&7Type any amount on a sign."
+      - "&7Type any amount in a dialog."
       - ""
       - "&eClick to enter an amount"
     row: 2

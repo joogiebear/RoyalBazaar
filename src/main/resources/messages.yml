@@ -19,3 +19,21 @@ trade:
   sold: "&aSold &f{amount} &afor &e${total}"
   done: "&aDone: &f{amount} &7for &e${total}"
   failed: "&c{reason}"
+
+# The text-input dialog (search and custom amounts). In each prompt the first line is the
+# dialog title and any further lines are shown under it.
+input:
+  confirm: "&aDone"
+  cancel: "&cCancel"
+  search:
+    - "&fSearch the bazaar"
+    - "&7Type an item name"
+  buy-amount:
+    - "&fBuy a custom amount"
+    - "&7How many do you want to buy?"
+  amount-buy:
+    - "&fBuy a custom amount"
+    - "&7How many do you want to buy?"
+  amount-sell:
+    - "&fSell a custom amount"
+    - "&7How many do you want to sell?"

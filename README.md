@@ -251,7 +251,7 @@ The menus are:
 | `bazaar_category.yml` | A category's grid — group icons, or products for a flat category |
 | `bazaar_group.yml` | One group's products |
 | `bazaar_product.yml` | A single item: live stats, plus Buy Instantly / Sell Instantly |
-| `bazaar_buy.yml` | Quantity picker — 1, a stack, fill inventory, or a custom amount typed on a sign |
+| `bazaar_buy.yml` | Quantity picker — 1, a stack, fill inventory, or a custom amount typed in a dialog |
 
 All in the **EcoMenus dialect** — mask/pattern, `slots:` with `location: {row, column}`,
 inline item specs, `left-click:` effect lists, `%percent%` placeholders.

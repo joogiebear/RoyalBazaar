@@ -9,36 +9,37 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Custom amount flow: read a number from a sign (main-thread callback), run the trade, reopen the
- * product page.
+ * Custom amount flow: read a number from a text dialog (main-thread callback), run the trade, reopen
+ * the product page.
  */
 public final class AmountPrompt {
 
     private final BazaarService service;
     private final GuiManager gui;
     private final MessageManager messages;
-    private final SignInput signInput;
+    private final TextInput textInput;
 
-    public AmountPrompt(BazaarService service, GuiManager gui, MessageManager messages, SignInput signInput) {
+    public AmountPrompt(BazaarService service, GuiManager gui, MessageManager messages, TextInput textInput) {
         this.service = service;
         this.gui = gui;
         this.messages = messages;
-        this.signInput = signInput;
+        this.textInput = textInput;
     }
 
     public void begin(Player player, String itemId, boolean buy) {
         if (itemId == null) {
             return;
         }
-        signInput.request(player,
-                List.of("&8^^^^^^^^^^^^^^^", buy ? "&8Amount to buy" : "&8Amount to sell", "&8(or 'cancel')"),
-                typed -> finish(player, itemId, buy, typed));
+        List<String> title = buy
+                ? messages.lines("input.amount-buy", List.of("&fBuy a custom amount", "&7How many do you want to buy?"))
+                : messages.lines("input.amount-sell", List.of("&fSell a custom amount", "&7How many do you want to sell?"));
+        textInput.request(player, title, typed -> finish(player, itemId, buy, typed));
     }
 
     // typed is null when no answer is coming
     private void finish(Player player, String itemId, boolean buy, String typed) {
-        if (typed == null && !SignInput.showingOwnInventory(player)) {
-            return;                               // another plugin's menu took over, leave it be
+        if (typed == null && !TextInput.screenFree(player)) {
+            return;                               // gone, dead or in another menu, leave it be
         }
         if (typed == null || typed.isBlank() || typed.equalsIgnoreCase("cancel")) {
             gui.openProduct(player, itemId);      // cancelled: back where they were

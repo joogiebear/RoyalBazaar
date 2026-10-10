@@ -7,7 +7,7 @@ import com.mystipixel.royalbazaar.gui.AmountPrompt;
 import com.mystipixel.royalbazaar.gui.BazaarGuiListener;
 import com.mystipixel.royalbazaar.gui.EffectDispatcher;
 import com.mystipixel.royalbazaar.gui.GuiManager;
-import com.mystipixel.royalbazaar.gui.SignInput;
+import com.mystipixel.royalbazaar.gui.TextInput;
 import com.mystipixel.royalbazaar.gui.menu.MenuManager;
 import com.mystipixel.royalbazaar.gui.menu.MenuTemplate;
 import com.mystipixel.royalbazaar.hooks.BazaarPlaceholderExpansion;
@@ -61,7 +61,7 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
     private MenuManager menus;
     private GuiManager gui;
     private final ItemNames itemNames = new ItemNames();
-    private SignInput signInput;
+    private TextInput textInput;
 
     private BukkitTask tickTask;
     private BukkitTask flushTask;
@@ -136,10 +136,10 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
         itemNames.reload(new File(getDataFolder(), "lang"), getLogger());
         this.gui = new GuiManager(menus, market, service, eco, itemNames);
 
-        this.signInput = new SignInput(this);
-        getServer().getPluginManager().registerEvents(signInput, this);
-        AmountPrompt prompt = new AmountPrompt(service, gui, messages, signInput);
-        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages, market, signInput);
+        this.textInput = new TextInput(this, messages);
+        getServer().getPluginManager().registerEvents(textInput, this);
+        AmountPrompt prompt = new AmountPrompt(service, gui, messages, textInput);
+        EffectDispatcher dispatcher = new EffectDispatcher(gui, service, prompt, messages, market, textInput);
         getServer().getPluginManager().registerEvents(new BazaarGuiListener(gui, dispatcher), this);
 
         BazaarCommand command = new BazaarCommand(this, gui, market, service);
@@ -227,15 +227,15 @@ public final class RoyalBazaarPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (textInput != null) {
+            textInput.shutdown();
+        }
         cancelTasks();
         // menu icons are real item stacks; without our click listener an open menu is a free chest
         for (Player player : getServer().getOnlinePlayers()) {
             if (BazaarMenuHolder.isMenu(player.getOpenInventory().getTopInventory())) {
                 player.closeInventory();
             }
-        }
-        if (signInput != null) {
-            signInput.shutdown();
         }
         if (placeholderExpansion != null) {
             placeholderExpansion.unregister();
