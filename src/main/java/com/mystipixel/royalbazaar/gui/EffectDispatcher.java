@@ -23,10 +23,10 @@ public final class EffectDispatcher {
     private final AmountPrompt prompt;
     private final MessageManager messages;
     private final MarketManager market;
-    private final SignInput signInput;
+    private final TextInput textInput;
 
-    public EffectDispatcher(GuiManager gui, BazaarService service, AmountPrompt prompt, MessageManager messages, MarketManager market, SignInput signInput) {
-        this.signInput = signInput;
+    public EffectDispatcher(GuiManager gui, BazaarService service, AmountPrompt prompt, MessageManager messages, MarketManager market, TextInput textInput) {
+        this.textInput = textInput;
         this.market = market;
         this.gui = gui;
         this.service = service;
@@ -172,9 +172,11 @@ public final class EffectDispatcher {
         if (itemId == null) {
             return;
         }
-        signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8How many", "&8to buy?"), typed -> {
-            if (typed == null && !SignInput.showingOwnInventory(player)) {
-                return;                             // another plugin's menu took over, leave it be
+        List<String> title = messages.lines("input.buy-amount",
+                List.of("&fBuy a custom amount", "&7How many do you want to buy?"));
+        textInput.request(player, title, typed -> {
+            if (typed == null && !TextInput.screenFree(player)) {
+                return;                             // gone, dead or in another menu, leave it be
             }
             if (typed == null || typed.isBlank()) {
                 gui.openBuy(player, itemId);        // cancelled: back where they were
@@ -230,12 +232,14 @@ public final class EffectDispatcher {
     }
 
     private void beginSearch(Player player) {
-        signInput.request(player, List.of("&8^^^^^^^^^^^^^^^", "&8Type an item", "&8name to search"), query -> {
-            if (query == null && !SignInput.showingOwnInventory(player)) {
-                return;                       // another plugin's menu took over, leave it be
+        List<String> title = messages.lines("input.search",
+                List.of("&fSearch the bazaar", "&7Type an item name"));
+        textInput.request(player, title, query -> {
+            if (query == null && !TextInput.screenFree(player)) {
+                return;                       // gone, dead or in another menu, leave it be
             }
             if (query == null || query.isBlank()) {
-                gui.openDefault(player);      // cancelled or the sign wouldn't open
+                gui.openDefault(player);      // cancelled
                 return;
             }
             gui.openSearch(player, query, 1);

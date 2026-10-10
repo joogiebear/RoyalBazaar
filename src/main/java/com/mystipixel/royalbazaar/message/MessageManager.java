@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 /** Loads {@code messages.yml}. Every key has an inline fallback, so the file is optional. */
@@ -38,6 +39,14 @@ public final class MessageManager {
 
     public String get(String key, String fallback) {
         return messages.getString(key, fallback);
+    }
+
+    // a list key; a plain string there counts as a one-line list
+    public List<String> lines(String key, List<String> fallback) {
+        if (messages.isList(key)) {
+            return messages.getStringList(key);
+        }
+        return messages.isString(key) ? List.of(messages.getString(key)) : fallback;
     }
 
     public String format(String key, String fallback, Map<String, String> placeholders) {
