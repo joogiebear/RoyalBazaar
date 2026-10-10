@@ -4,7 +4,7 @@
 # Shipped defaults are VANILLA ONLY, so the bazaar works on a fresh server with no other plugins.
 # This is the tail of the economy: end/nether goods, brewing glassware, amethyst, deep dark,
 # archaeology and the genuinely rare drops. Rare items get a higher ceiling_pct and a lower
-# elasticity, so a thin market is allowed to move — that is the point of a rare.
+# elasticity, so a thin market is allowed to move.
 
 name: "&dOddities"
 icon: "minecraft:ender_pearl"
@@ -52,7 +52,7 @@ groups:
     order: 8
 
 items:
-  # --- Nether ---
+  # Nether
   nether_brick:
     item: "minecraft:nether_brick"
     group: nether
@@ -62,7 +62,7 @@ items:
     group: nether
     base_price: 7.0       # 4 nether bricks
 
-  # --- Netherite ---
+  # Netherite
   ancient_debris:
     item: "minecraft:ancient_debris"
     group: netherite
@@ -90,15 +90,15 @@ items:
   netherite_upgrade_smithing_template:
     item: "minecraft:netherite_upgrade_smithing_template"
     group: netherite
-    base_price: 1200.0    # duplicating one costs 7 diamonds (840) — must stay above that
+    base_price: 1200.0    # duplicating one costs 7 diamonds (840), must stay above that
     ceiling_pct: 4.0
     elasticity: 5000
 
-  # --- The End ---
+  # The End
   end_stone_bricks:
     item: "minecraft:end_stone_bricks"
     group: end
-    base_price: 6.0       # 4 end stone yields 4 — cannot exceed the input
+    base_price: 6.0       # 4 end stone yields 4, cannot exceed the input
   chorus_fruit:
     item: "minecraft:chorus_fruit"
     group: end
@@ -140,7 +140,7 @@ items:
     group: end
     base_price: 230.0     # 7 glass + eye of ender + ghast tear
 
-  # --- Amethyst ---
+  # Amethyst
   amethyst_shard:
     item: "minecraft:amethyst_shard"
     group: amethyst
@@ -152,13 +152,13 @@ items:
   amethyst_cluster:
     item: "minecraft:amethyst_cluster"
     group: amethyst
-    base_price: 110.0     # breaks into 4 shards (100) — must sit above that
+    base_price: 110.0     # breaks into 4 shards (100), must sit above that
   spyglass:
     item: "minecraft:spyglass"
     group: amethyst
     base_price: 40.0      # 2 copper ingots + amethyst shard
 
-  # --- Deep Dark ---
+  # Deep Dark
   echo_shard:
     item: "minecraft:echo_shard"
     group: deep_dark
@@ -186,7 +186,7 @@ items:
     base_price: 800.0
     ceiling_pct: 4.0
 
-  # --- Brewing ---
+  # Brewing
   glass_bottle:
     item: "minecraft:glass_bottle"
     group: brewing
@@ -212,7 +212,7 @@ items:
     group: brewing
     base_price: 20.0      # flint + iron ingot
 
-  # --- Archaeology ---
+  # Archaeology
   brush:
     item: "minecraft:brush"
     group: archaeology
@@ -225,7 +225,7 @@ items:
   decorated_pot:
     item: "minecraft:decorated_pot"
     group: archaeology
-    base_price: 20.0      # 4 bricks — sherds are optional, so price it off bricks
+    base_price: 20.0      # 4 bricks; sherds are optional, so price it off bricks
   torchflower_seeds:
     item: "minecraft:torchflower_seeds"
     group: archaeology
@@ -240,7 +240,7 @@ items:
     base_price: 400.0
     ceiling_pct: 4.0
 
-  # --- Valuables ---
+  # Valuables
   beacon:
     item: "minecraft:beacon"
     group: valuables
@@ -262,7 +262,7 @@ items:
   enchanted_book:
     item: "minecraft:enchanted_book"
     group: valuables
-    base_price: 400.0     # generic — enchantment NBT is not priced separately
+    base_price: 400.0     # generic: enchantment NBT is not priced separately
     ceiling_pct: 4.0
   goat_horn:
     item: "minecraft:goat_horn"
@@ -278,24 +278,14 @@ items:
     group: valuables
     base_price: 600.0     # 6 crying obsidian (480) + 3 glowstone (78)
 
-  # ---------------------------------------------------------------------------
-  # OPTIONAL: custom EcoItems entries.
-  #
-  # Everything above is vanilla, so this file loads clean on any server. The block below
-  # is an example of hooking a custom item from the EcoItems plugin into the bazaar.
-  #
-  # Note the 'ecoitems:' (plural) namespace. Uncomment ONLY if EcoItems is installed AND
-  # actually defines an item with that id — otherwise the bazaar logs a warning on every
-  # startup and the entry is skipped.
-  #
-  # 'base_price: auto' instead of a number anchors the item to EcoShop's buy value, so the
-  # shop stays the single source of truth; 'npc_floor'/'npc_ceiling' then pin the bazaar's
-  # range to the NPC's, which is what stops compression from becoming a money printer.
+  # Optional example: custom EcoItems entries. Note the 'ecoitems:' (plural) namespace. Uncomment only
+  # if EcoItems defines that id, otherwise the entry is skipped with a warning on every startup.
+  # 'base_price: auto' uses EcoShop's buy value; 'npc_floor'/'npc_ceiling' pin the range to the NPC's.
   #
   # enchanted_ender_pearl:
   #   item: "ecoitems:enchanted_ender_pearl"
   #   group: valuables
-  #   base_price: 7200.0     # 160x ender_pearl (45.0) — the usual compression multiplier
+  #   base_price: 7200.0     # 160x ender_pearl (45.0), the usual compression multiplier
   #   ceiling_pct: 4.0       # rare + thin market, so allow a wider swing than the 3.0 default
   #   elasticity: 5000       # a thin market should move faster than a staple's 50000
   #
@@ -304,4 +294,3 @@ items:
   #   base_price: auto       # let EcoShop own the number
   #   npc_floor: true        # bazaar sell can never drop below the NPC's sell price
   #   npc_ceiling: true      # bazaar buy can never rise above the NPC's buy price
-  # ---------------------------------------------------------------------------

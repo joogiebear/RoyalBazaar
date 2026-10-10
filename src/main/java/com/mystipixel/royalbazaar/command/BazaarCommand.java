@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/** {@code /bazaar} — open the bazaar, sell your inventory, reload config, or inspect prices. */
+/** {@code /bazaar [reload|price|sellall|admin]}. */
 public final class BazaarCommand implements CommandExecutor, TabCompleter {
 
     private final RoyalBazaarPlugin plugin;
@@ -34,7 +34,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Every way into the bazaar goes through this command, so this is where royalbazaar.use bites.
+        // every way into the bazaar goes through this command, so royalbazaar.use is checked here
         if (!sender.hasPermission("royalbazaar.use") && !sender.hasPermission("royalbazaar.admin")) {
             plugin.messages().send(sender, "no-permission", "&cNo permission.");
             return true;
@@ -86,11 +86,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    /**
-     * {@code /bazaar sellall [category]} — the menu's Sell All button as a command, so emptying a
-     * full inventory after a mining trip doesn't require opening a menu first. Every item still goes
-     * through the normal sell path: price impact, the audit record and any EconGuard veto all apply.
-     */
+    // /bazaar sellall [category]: same sell path as the menu button (price impact, audit, EconGuard veto)
     private void sellAll(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             plugin.messages().send(sender, "players-only", "Only players can sell to the bazaar.");
@@ -126,12 +122,7 @@ public final class BazaarCommand implements CommandExecutor, TabCompleter {
         }
     }
 
-    /**
-     * Incident tooling: pin, freeze or reset a price without touching the database by hand.
-     * {@code set}/{@code reset} go through {@code setMid}, so the change is flagged dirty and
-     * persisted by the normal write-behind flush; {@code freeze} is deliberately in-memory only
-     * (it clears on restart) so a forgotten freeze cannot quietly outlive its incident.
-     */
+    // set/reset persist through the normal flush; freeze is in-memory only and clears on restart
     private void admin(CommandSender sender, String[] args) {
         if (!sender.hasPermission("royalbazaar.admin")) {
             plugin.messages().send(sender, "no-permission", "&cNo permission.");

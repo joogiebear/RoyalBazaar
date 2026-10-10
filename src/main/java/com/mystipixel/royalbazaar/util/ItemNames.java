@@ -20,18 +20,14 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * Translated vanilla item names for search. The server only ships English, so owners drop Minecraft
- * language files (e.g. {@code fr_fr.json}, copied from a client's assets) into the plugin's
- * {@code lang/} folder, and a search then also matches an item's name in any of those languages.
- *
- * <p>Matching ignores case and accents, so "epee" finds "Épée en diamant".
+ * Translated item names for search, from Minecraft language files (e.g. {@code fr_fr.json}) in the
+ * plugin's {@code lang/} folder. Matching ignores case and accents, so "epee" finds "Épée en diamant".
  */
 public final class ItemNames {
 
     private static final Pattern MARKS = Pattern.compile("\\p{M}+");
     private static final Pattern KEY = Pattern.compile("(?:item|block)\\.minecraft\\.([a-z0-9_]+)");
 
-    /** Vanilla item id (e.g. {@code diamond_helmet}) to its normalised translated names. */
     private volatile Map<String, List<String>> byId = Map.of();
 
     /** Lower-cased, accent-free form used on both sides of a match. */
@@ -66,7 +62,6 @@ public final class ItemNames {
         }
     }
 
-    /** Replace the names with those of {@code langs} (Minecraft language-file key/value maps). */
     void load(Collection<Map<String, String>> langs) {
         Map<String, List<String>> names = new HashMap<>();
         for (Map<String, String> lang : langs) {

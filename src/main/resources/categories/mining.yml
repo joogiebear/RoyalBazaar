@@ -107,12 +107,12 @@ groups:
     order: 22
 
 items:
-  # --- Stone & Cobblestone ---
+  # Stone & Cobblestone
   cobblestone:
     item: "minecraft:cobblestone"
     group: stone
     base_price: 2.0
-    elasticity: 150000    # staple — very stable
+    elasticity: 150000    # staple, very stable
   stone:
     item: "minecraft:stone"
     group: stone
@@ -150,7 +150,7 @@ items:
     group: obsidian
     base_price: 80.0
 
-  # --- Deepslate ---
+  # Deepslate
   cobbled_deepslate:
     item: "minecraft:cobbled_deepslate"
     group: deepslate
@@ -176,7 +176,7 @@ items:
     group: deepslate
     base_price: 90.0
 
-  # --- Coal ---
+  # Coal
   coal:
     item: "minecraft:coal"
     group: coal
@@ -194,7 +194,7 @@ items:
     group: coal
     base_price: 9.0       # silk touch only
 
-  # --- Copper ---
+  # Copper
   raw_copper:
     item: "minecraft:raw_copper"
     group: copper
@@ -216,7 +216,7 @@ items:
     group: copper
     base_price: 17.0      # 3 copper ingots
 
-  # --- Iron ---
+  # Iron
   raw_iron:
     item: "minecraft:raw_iron"
     group: iron
@@ -259,7 +259,7 @@ items:
     group: iron
     base_price: 400.0     # 31 ingots (372)
 
-  # --- Gold ---
+  # Gold
   raw_gold:
     item: "minecraft:raw_gold"
     group: gold
@@ -285,7 +285,7 @@ items:
     group: gold
     base_price: 20.0
 
-  # --- Redstone ---
+  # Redstone
   redstone:
     item: "minecraft:redstone"
     group: redstone
@@ -307,7 +307,7 @@ items:
     group: glowstone
     base_price: 26.0      # 4 dust
 
-  # --- Lapis Lazuli ---
+  # Lapis Lazuli
   lapis_lazuli:
     item: "minecraft:lapis_lazuli"
     group: lapis
@@ -321,7 +321,7 @@ items:
     group: lapis
     base_price: 14.0
 
-  # --- Nether Quartz ---
+  # Nether Quartz
   quartz:
     item: "minecraft:quartz"
     group: quartz
@@ -335,7 +335,7 @@ items:
     group: quartz
     base_price: 15.0
 
-  # --- Emerald ---
+  # Emerald
   emerald:
     item: "minecraft:emerald"
     group: emerald
@@ -349,12 +349,12 @@ items:
     group: emerald
     base_price: 100.0
 
-  # --- Diamond ---
+  # Diamond
   diamond:
     item: "minecraft:diamond"
     group: diamond
     base_price: 120.0
-    elasticity: 20000     # thinner market — moves faster
+    elasticity: 20000     # thinner market, moves faster
   diamond_block:
     item: "minecraft:diamond_block"
     group: diamond
@@ -365,7 +365,7 @@ items:
     base_price: 200.0
     ceiling_pct: 4.0
 
-  # --- Dirt, Sand & Gravel ---
+  # Dirt, Sand & Gravel
   dirt:
     item: "minecraft:dirt"
     group: earth
@@ -452,7 +452,7 @@ items:
     group: earth
     base_price: 4.0
 
-  # --- Glass ---
+  # Glass
   glass:
     item: "minecraft:glass"
     group: glass
@@ -466,7 +466,7 @@ items:
     group: glass
     base_price: 30.0      # glass + 4 amethyst shards
 
-  # --- Redstone Components ---
+  # Redstone Components
   redstone_torch:
     item: "minecraft:redstone_torch"
     group: redstone_gear
@@ -515,12 +515,12 @@ items:
     item: "minecraft:powered_rail"
     group: redstone_gear
     base_price: 23.0      # 6 gold + stick + redstone yields 6
-  # --- End Stone ---
+  # End Stone
   end_stone:
     item: "minecraft:end_stone"
     group: end_stone
     base_price: 3.0
-  # --- Ice ---
+  # Ice
   ice:
     item: "minecraft:ice"
     group: ice
@@ -529,7 +529,7 @@ items:
     item: "minecraft:packed_ice"
     group: ice
     base_price: 27.0
-  # --- Snow ---
+  # Snow
   snowball:
     item: "minecraft:snowball"
     group: snow

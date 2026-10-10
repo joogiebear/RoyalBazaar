@@ -26,25 +26,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * Sign-based text entry (Hypixel-style): a throwaway sign is placed at the player's feet, opened
- * with Paper's {@code openSign} API, and whatever they type on the top line is read back via
- * {@link SignChangeEvent}. The original block is always restored. Uses only official Paper API so
- * it survives version changes better than NMS/packet approaches.
+ * Sign-based text entry: a throwaway sign at the player's feet, opened with Paper's {@code openSign},
+ * top line read back via {@link SignChangeEvent}; the original block is restored.
  *
- * The callback runs on the main thread, exactly once per prompt that opened. It receives the typed
- * text, or {@code null} if no answer is coming: the sign could not be placed, or the prompt was
- * abandoned (so callers can fall back).
- *
- * A prompt is abandoned when its answer can no longer arrive: it timed out, the player moved out of
- * the server's sign-edit range or changed world, the sign was broken, or another inventory replaced
- * the editor on their screen. Without that, one lost answer strands the caller's state for good and
- * leaves the sign in the world.
+ * <p>The callback runs on the main thread exactly once per opened prompt, with the typed text or
+ * {@code null} when no answer can arrive (timeout, out of range, sign broken, another inventory opened).
  */
 public final class SignInput implements Listener {
 
-    /** How long a prompt may stay open before it is treated as abandoned. */
     private static final long TIMEOUT_MILLIS = 60_000L;
-    /** Past roughly this distance the server discards the sign's update, so no answer can come. */
+    // past roughly this distance the server discards the sign's update
     private static final double MAX_DISTANCE_SQUARED = 8.0 * 8.0;
 
     private record Pending(UUID player, BlockData original, Consumer<String> callback, long deadline) {
@@ -60,16 +51,14 @@ public final class SignInput implements Listener {
 
     /** Open a sign editor for {@code player}. {@code hints} fill lines 2-4 (the input is line 1). */
     public void request(Player player, List<String> hints, Consumer<String> callback) {
-        // Drop any earlier prompt still open for this player, taking its sign down too, or the old
-        // spot is left as a permanent oak sign with the block it borrowed gone.
+        // drop any earlier prompt for this player, taking its sign down too
         for (Map.Entry<Location, Pending> entry : List.copyOf(pending.entrySet())) {
             if (entry.getValue().player().equals(player.getUniqueId())
                     && pending.remove(entry.getKey(), entry.getValue())) {
                 restore(entry.getKey(), entry.getValue());
             }
         }
-        // Close the current menu, then open the sign a tick later (opening a sign editor while a
-        // chest inventory is open is unreliable otherwise).
+        // open the sign a tick after closing the menu; opening it over a chest inventory is unreliable
         player.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> openNow(player, hints, callback));
     }
@@ -100,14 +89,8 @@ public final class SignInput implements Listener {
         player.openSign(sign, Side.FRONT);
     }
 
-    /**
-     * Where to put the throwaway sign: the first empty spot among the player's feet, head and the
-     * block above. Only air or plain water is borrowed: a ladder, vine or scaffolding the player is
-     * standing in would be pulled out from under them, half of a door or tall plant can be orphaned,
-     * and none of it would pass through protection plugins, since no place event fires. Nor is a spot
-     * another player's prompt is already using, since its "original" would then be that prompt's
-     * sign. {@code null} if none will do.
-     */
+    // only air or water is borrowed (no place event fires, so protection plugins never see it), and
+    // never a spot another prompt is using
     private Block signSpot(Player player) {
         Block feet = player.getLocation().getBlock();
         Block head = feet.getRelative(org.bukkit.block.BlockFace.UP);
@@ -125,11 +108,7 @@ public final class SignInput implements Listener {
         return null;
     }
 
-    /**
-     * Put the borrowed block back — but only over our own sign, or the air left where it was broken.
-     * Anything else there was placed since, and overwriting it would destroy it (a container's
-     * contents with it, since block data carries none).
-     */
+    // only over our sign or the air where it was broken; anything else was placed since
     private static void restore(Location loc, Pending p) {
         Block block = loc.getBlock();
         Material now = block.getType();
@@ -138,7 +117,6 @@ public final class SignInput implements Listener {
         }
     }
 
-    /** Give up on a prompt: take the sign down and tell the caller no answer is coming. */
     private void abandon(Location loc, Pending p) {
         if (!pending.remove(loc, p)) {
             return;                                  // answered or cleaned up in the meantime
@@ -148,8 +126,7 @@ public final class SignInput implements Listener {
         if (player == null) {
             return;
         }
-        // Close a sign editor that may still be on screen (a timeout), but not another plugin's menu
-        // that replaced it — the caller decides what to do about that.
+        // close a lingering sign editor, but not another plugin's menu that replaced it
         if (showingOwnInventory(player)) {
             player.closeInventory();
         }
@@ -162,15 +139,13 @@ public final class SignInput implements Listener {
         return type == InventoryType.CRAFTING || type == InventoryType.CREATIVE;
     }
 
-    /** Abandon every prompt whose answer can no longer arrive. */
     private void sweep() {
         long now = System.currentTimeMillis();
         for (Map.Entry<Location, Pending> entry : List.copyOf(pending.entrySet())) {
             Location loc = entry.getKey();
             Pending p = entry.getValue();
             Player player = Bukkit.getPlayer(p.player());
-            // Distance before the block lookup, so a player who has walked away does not keep a far
-            // chunk loading every half second.
+            // distance before the block lookup, so a far chunk isn't loaded every half second
             if (player == null
                     || now > p.deadline()
                     || !player.getWorld().equals(loc.getWorld())
@@ -189,7 +164,7 @@ public final class SignInput implements Listener {
         if (p == null) {
             return;
         }
-        // Our sign either way, so never let the edit through; but only its owner's answer counts.
+        // our sign either way, so never let the edit through; only its owner's answer counts
         event.setCancelled(true);
         if (!event.getPlayer().getUniqueId().equals(p.player()) || !pending.remove(loc, p)) {
             return;
@@ -205,11 +180,7 @@ public final class SignInput implements Listener {
         });
     }
 
-    /**
-     * Another inventory opening replaces the sign editor on the client, and the answer it would have
-     * sent is gone. Abandoned a tick later, once that inventory is actually open, so the caller can
-     * see it.
-     */
+    // another inventory replaces the sign editor; abandon a tick later, once it is actually open
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryOpen(InventoryOpenEvent event) {
         UUID id = event.getPlayer().getUniqueId();
@@ -232,10 +203,7 @@ public final class SignInput implements Listener {
         });
     }
 
-    /**
-     * Take every open prompt's sign down. Called on disable: a stop or reload mid-prompt would
-     * otherwise leave the sign in the world for good, and the block it borrowed with it.
-     */
+    /** Take every open prompt's sign down. Call on disable. */
     public void shutdown() {
         for (Map.Entry<Location, Pending> entry : List.copyOf(pending.entrySet())) {
             if (pending.remove(entry.getKey(), entry.getValue())) {

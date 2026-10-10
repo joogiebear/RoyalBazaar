@@ -10,21 +10,15 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * One {@code categories/*.yml} file: display metadata for the main-menu icon plus a {@code defaults:}
- * block and the item list. Each item inherits the category defaults and overrides only the fields it
- * cares about — so 300 items don't repeat the same five tuning lines.
- *
- * <p>A category may optionally declare {@code groups:} and tag items with {@code group: <id>}, which
- * inserts a middle menu: category → group → product (e.g. Mining → Iron → Enchanted Iron). Items with
- * no {@code group} render straight into the category as before, so a category can be flat or grouped
- * and existing configs keep working untouched.
+ * One {@code categories/*.yml} file. Items inherit the {@code defaults:} block and override only what
+ * they set. Optional {@code groups:} add a middle menu (category, group, product); items without a
+ * {@code group} sit directly in the category.
  */
 public final class CategoryConfig {
 
-    /** One item family inside a category. {@code order} decides its position in the group grid. */
+    /** One item family inside a category; {@code order} sets its position in the group grid. */
     public record Group(String id, String name, String icon, int order, int slot) {}
 
-    /** Tuning that every item inherits unless it overrides the field. */
     public record Defaults(double spread, double elasticity, double reversionRate,
                            double floorPct, double ceilingPct) {
 
@@ -76,7 +70,7 @@ public final class CategoryConfig {
                 root.getConfigurationSection("items"), logger, npcArbitrageGuard);
     }
 
-    /** Declared order wins; ties fall back to config order, so an un-ordered groups: block stays stable. */
+    // declared order wins; ties keep config order
     private static List<Group> loadGroups(ConfigurationSection sec) {
         if (sec == null) {
             return List.of();
@@ -102,11 +96,7 @@ public final class CategoryConfig {
     public String icon() { return icon; }
     public int slot() { return slot; }
 
-    /**
-     * An explicit grid position for an entry, as either {@code slot:} (raw inventory index) or a
-     * {@code row:}/{@code column:} pair (both 1-indexed, matching how menu buttons are placed).
-     * Returns -1 when none is set, which means "flow into the next free slot" as before.
-     */
+    // slot: is a raw inventory index, row:/column: are 1-indexed; -1 means flow into the next free slot
     private static int slotOf(ConfigurationSection sec) {
         if (sec.contains("slot")) {
             return sec.getInt("slot", -1);
@@ -119,28 +109,16 @@ public final class CategoryConfig {
         return (row - 1) * 9 + (column - 1);
     }
 
-    /** Declared groups, in display order. Empty = this category renders its items directly. */
+    /** Declared groups in display order; empty when the category shows its items directly. */
     public List<Group> groups() { return groups; }
 
     public boolean hasGroups() { return !groups.isEmpty(); }
 
     /**
-     * Materialise every configured item, applying default inheritance and EcoShop anchoring:
-     * <ul>
-     *   <li>{@code base_price: auto} → the EcoShop buy value (the item's canonical price)</li>
-     *   <li>{@code npc_floor: true} → floor pinned to the EcoShop sell value (NPC never undercut)</li>
-     *   <li>{@code npc_ceiling: true} → ceiling pinned to the EcoShop buy value</li>
-     * </ul>
-     * Each falls back to its {@code *_pct} default when EcoShop is absent or the item isn't listed.
-     *
-     * <p>With {@code trading.npc-arbitrage-guard} on, an item EcoShop also trades is additionally kept
-     * inside EcoShop's bracket, spread included, whatever the {@code npc_*} flags say: the bazaar's buy
-     * price never drops below what the NPC pays, and its sell price never rises above what the NPC
-     * charges. Outside that bracket a player could buy from one and sell to the other at a profit.
-     *
-     * <p>An item whose tuning can't produce a sane market (non-positive elasticity, a spread outside
-     * [0, 1), a reversion rate outside [0, 1], a floor at or above the ceiling) is skipped with a
-     * warning rather than loaded: several of those invert the price curve into a money printer.
+     * Build every configured item with defaults and EcoShop anchoring ({@code base_price: auto} uses the
+     * EcoShop buy value, {@code npc_floor}/{@code npc_ceiling} pin to its sell/buy values, falling back to
+     * the {@code *_pct} defaults). With {@code trading.npc-arbitrage-guard} on, items EcoShop also trades
+     * are kept inside its bracket. Items with unworkable tuning are skipped with a warning.
      */
     public List<MarketItem> buildItems(EcoShopHook shop) {
         List<MarketItem> out = new ArrayList<>();
@@ -154,7 +132,7 @@ public final class CategoryConfig {
             }
             String itemId = is.getString("item");
             if (itemId == null || itemId.isBlank()) {
-                logger.warning("[category " + id + "] item '" + key + "' has no 'item:' lookup — skipping.");
+                logger.warning("[category " + id + "] item '" + key + "' has no 'item:' lookup; skipping.");
                 continue;
             }
 
@@ -169,7 +147,6 @@ public final class CategoryConfig {
             double ceiling = is.getBoolean("npc_ceiling", false)
                     ? orElse(shop.buyValue(itemId), base * is.getDouble("ceiling_pct", defaults.ceilingPct()))
                     : base * is.getDouble("ceiling_pct", defaults.ceilingPct());
-            // Guard against a mis-ordered anchor (floor must sit below ceiling).
             if (floor >= ceiling) {
                 floor = base * defaults.floorPct();
                 ceiling = base * defaults.ceilingPct();
@@ -185,7 +162,7 @@ public final class CategoryConfig {
             }
             String problem = tuningProblem(spread, elasticity, reversion, floor, ceiling);
             if (problem != null) {
-                logger.warning("[category " + id + "] item '" + key + "' " + problem + " — skipping.");
+                logger.warning("[category " + id + "] item '" + key + "' " + problem + "; skipping.");
                 continue;
             }
 
@@ -206,12 +183,7 @@ public final class CategoryConfig {
         return out;
     }
 
-    /**
-     * Narrow {@code [floor, ceiling]} so that, at every mid the item can reach, the bazaar's buy price
-     * ({@code mid·(1+spread/2)}) is at least EcoShop's sell value and its sell price
-     * ({@code mid·(1−spread/2)}) at most EcoShop's buy value. Leaves the range alone, with a warning,
-     * if EcoShop's own prices leave no room for it.
-     */
+    // narrow [floor, ceiling] so mid·(1+spread/2) >= NPC sell and mid·(1-spread/2) <= NPC buy at every mid
     private double[] bracket(EcoShopHook shop, String itemId, double spread, double floor, double ceiling,
                              String key) {
         if (spread < 0 || spread >= 1) {
@@ -235,7 +207,7 @@ public final class CategoryConfig {
         return new double[]{lo, hi};
     }
 
-    /** Why this tuning can't make a working market, or null if it can. */
+    // why this tuning can't make a working market, or null if it can
     static String tuningProblem(double spread, double elasticity, double reversion, double floor,
                                 double ceiling) {
         if (!(elasticity > 0) || Double.isInfinite(elasticity)) {
@@ -253,11 +225,7 @@ public final class CategoryConfig {
         return null;
     }
 
-    /**
-     * The item's {@code group:}, or null if it belongs directly to the category. A group id that isn't
-     * declared in {@code groups:} is dropped to null and warned about — a typo'd group would otherwise
-     * make the item vanish from the GUI entirely (it'd belong to a group no menu ever opens).
-     */
+    // an undeclared group falls back to null, otherwise the item would sit in a group no menu opens
     private String resolveGroup(ConfigurationSection is, String key) {
         String group = is.getString("group");
         if (group == null || group.isBlank()) {
@@ -265,27 +233,27 @@ public final class CategoryConfig {
         }
         if (groups.stream().noneMatch(g -> g.id().equals(group))) {
             logger.warning("[category " + id + "] item '" + key + "' references group '" + group
-                    + "', which isn't declared under groups: — showing it directly in the category.");
+                    + "', which isn't declared under groups:. Showing it directly in the category.");
             return null;
         }
         return group;
     }
 
-    /** base_price is either a positive number or the literal {@code auto} (→ EcoShop buy value). */
+    // base_price is a positive number or auto (the EcoShop buy value)
     private double resolveBase(ConfigurationSection is, String itemId, EcoShopHook shop, String key) {
         String raw = is.getString("base_price", "");
         if ("auto".equalsIgnoreCase(raw.trim())) {
             Double anchored = shop.buyValue(itemId);
             if (anchored == null || anchored <= 0) {
                 logger.warning("[category " + id + "] item '" + key + "' uses base_price: auto but EcoShop has no"
-                        + " price for '" + itemId + "' — skipping.");
+                        + " price for '" + itemId + "'; skipping.");
                 return -1;
             }
             return anchored;
         }
         double base = is.getDouble("base_price", -1);
         if (base <= 0) {
-            logger.warning("[category " + id + "] item '" + key + "' has no positive base_price — skipping.");
+            logger.warning("[category " + id + "] item '" + key + "' has no positive base_price; skipping.");
         }
         return base;
     }

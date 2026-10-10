@@ -34,7 +34,6 @@ public record MenuEffect(String id, Map<String, Object> args) {
         }
     }
 
-    /** Parse a YAML effect list (list of maps with id/args). */
     public static List<MenuEffect> parseList(List<Map<?, ?>> raw) {
         List<MenuEffect> out = new ArrayList<>();
         if (raw == null) {

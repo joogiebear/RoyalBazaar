@@ -1,7 +1,5 @@
-# RoyalBazaar - group grid (category » group » product).
-# Shown when a category declares a groups: block and the player clicks one of its group icons.
-# The "0" slots in the mask are the live product area: the group's items flow in here
-# automatically and page themselves. Never edit item slots by hand.
+# Group grid (category, group, product), opened from a group icon. The group's items fill the
+# mask's "0" slots and page themselves.
 
 title: "&f%rbazaar_category% &7» &f%rbazaar_group_name%"
 command: []
@@ -19,7 +17,7 @@ backwards-arrow:
   row: 6
   column: 2
 
-# Category rail down the left edge — see bazaar_category.yml.
+# Category rail, see bazaar_category.yml.
 category-rail:
   enabled: true
   column: 1
@@ -28,22 +26,16 @@ category-rail:
   lore:
     - "&7Click to browse this category."
 
-# Grid layout:
-#   The "0" slots below are the live area — entries flow into them in order. Move, shrink or grow that
-#   area by editing the pattern; nothing about the layout is fixed in code.
-#   To pin a specific entry to a specific square, give it a row/column (or a raw slot) in its own
-#   categories/*.yml entry:
+# The "0" slots below are the live area; entries flow into them in order. Edit the pattern to reshape it.
+# To pin an entry to a square, give it a row/column (or a raw slot) in its categories/*.yml entry:
 #       wheat:
 #         item: minecraft:wheat
 #         row: 2
 #         column: 3
 #   Pinned entries hold their square on the first page; everything else fills in around them.
 
-# Menu-level sounds. This plays when the menu opens — including when a button elsewhere opens it.
-# So a button that navigates (back, open_menu, open_buy, open_product) must NOT also add play_sound:
-# the destination menu already speaks for the click, and two sounds fire as one doubled click.
-# Buttons that only re-render the current menu (buy, sell, sell all) DO need their own play_sound,
-# because a refresh deliberately does not replay this sound.
+# Plays whenever the menu opens. Navigation buttons should not add their own play_sound (it would
+# double up); buttons that only re-render the menu (buy, sell, sell all) need one, since a refresh is silent.
 sounds:
   open:
     enabled: true
@@ -107,7 +99,7 @@ slots:
     left-click:
       - id: rbazaar_search
 
-  # Back goes to the parent CATEGORY — one step up the chain, worked out from the open menu.
+  # Back goes to the parent category.
   - item: arrow name:"&7« Back"
     lore:
       - "&7Back to %rbazaar_category%"

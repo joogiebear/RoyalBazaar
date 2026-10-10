@@ -5,10 +5,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Pure-math tests for the bazaar's AMM pricing curve. No Bukkit needed - {@link PricingEngine} is
- * stateless and operates only on a {@link MarketItem}'s numbers.
- */
 class PricingEngineTest {
 
     private static final double BASE = 100.0;

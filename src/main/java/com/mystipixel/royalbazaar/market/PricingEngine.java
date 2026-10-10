@@ -1,21 +1,13 @@
 package com.mystipixel.royalbazaar.market;
 
 /**
- * The pure math of the bazaar. Stateless — every method is a function of a {@link MarketItem}'s
- * current {@code mid} plus its config. See the design doc for derivations.
- *
- * <p>Model: an AMM-style price curve. The server is always the counterparty with infinite depth,
- * so there is no order book. Buying quantity {@code q} walks the price <em>up</em> the curve
- * ({@code mid' = mid · e^(q/E)}); selling walks it down. Cost/proceeds are the integral along that
- * curve, so large orders are priced progressively worse — which is what makes round-trips and
- * whale-draining unprofitable by construction.
+ * Stateless bazaar pricing on an AMM-style curve: buying {@code q} moves {@code mid' = mid · e^(q/E)},
+ * selling moves it down. Cost is the integral along the curve, so round-trips never profit.
  */
 public final class PricingEngine {
 
     private PricingEngine() {
     }
-
-    // ---- instantaneous quotes (what the menu shows) ----
 
     public static double buyPrice(MarketItem i) {
         return i.mid() * (1.0 + i.spread() / 2.0);
@@ -24,8 +16,6 @@ public final class PricingEngine {
     public static double sellPrice(MarketItem i) {
         return i.mid() * (1.0 - i.spread() / 2.0);
     }
-
-    // ---- order cost / proceeds (integral along the curve, spread applied) ----
 
     /** Total cost to buy {@code q} units at the current mid, including the buy-side spread. */
     public static double buyCost(MarketItem i, long q) {
@@ -41,8 +31,6 @@ public final class PricingEngine {
         return raw * (1.0 - i.spread() / 2.0);
     }
 
-    // ---- market impact (new mid after a trade, clamped to caps) ----
-
     public static double midAfterBuy(MarketItem i, long q) {
         return clamp(i.mid() * Math.exp(q / i.elasticity()), i.floor(), i.ceiling());
     }
@@ -50,8 +38,6 @@ public final class PricingEngine {
     public static double midAfterSell(MarketItem i, long q) {
         return clamp(i.mid() * Math.exp(-q / i.elasticity()), i.floor(), i.ceiling());
     }
-
-    // ---- mean reversion (applied on the tick) ----
 
     /** Pull mid a fraction {@code reversionRate} of the way back toward base, in log-space. */
     public static double revert(MarketItem i) {

@@ -1,10 +1,7 @@
-# RoyalBazaar - market trends overview.
-# Three runs of live entries, top to bottom: today's biggest RISERS, biggest FALLERS, and the
-# MOST-TRADED items. The "0" slots are split into three equal runs in mask order, so reshaping the
-# rows below reshapes the sections - keep the run count divisible by three.
-# Items that didn't move (or didn't trade) leave their slots empty rather than padding the list.
+# Market trends. The "0" slots are split into three equal runs in mask order: today's risers,
+# fallers and most traded. Keep the slot count divisible by three. Flat items leave slots empty.
 #
-# Click ids: rbazaar_open_product (bound automatically to each entry) · rbazaar_back · close_inventory
+# Click ids: rbazaar_open_product (bound to each entry automatically), rbazaar_back, close_inventory
 
 title: "&8Bazaar &7» &fMarket Trends"
 command: []
@@ -17,7 +14,7 @@ sounds:
     volume: 0.7
     pitch: 1.2
 
-# Same rail as the category menu, so trends is a sibling of the categories, not a dead end.
+# Same rail as the category menu.
 category-rail:
   enabled: true
   column: 1
@@ -39,8 +36,7 @@ pages:
         - "111111111"
         - "111111111"
 
-# One entry per listed item, whichever run it lands in. The lore leads with the numbers that put
-# it on this screen.
+# One entry per listed item, whichever run it lands in.
 content:
   template:
     item: "%rbazaar_item%"
@@ -59,7 +55,7 @@ content:
           item: "%rbazaar_item%"
 
 slots:
-  # ---- run headers ----
+  # run headers
   - item: lime_dye name:"&a▲ Top Risers"
     lore:
       - "&7Biggest price gains"
@@ -81,7 +77,6 @@ slots:
     row: 4
     column: 2
 
-  # ---- nav ----
   - item: arrow name:"&7« Back"
     lore: []
     row: 6

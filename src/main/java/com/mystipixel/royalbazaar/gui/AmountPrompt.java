@@ -9,13 +9,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The "custom amount" flow: ask for a number on a throwaway sign — the same input the search box and
- * the instant-buy screen already use — then run the trade and reopen the product page.
- *
- * <p>This used to prompt in chat. A sign is better on every axis the suite cares about: the amount
- * stays private instead of appearing in public chat, the player is never stranded staring at a chat
- * box with no menu, and {@link SignInput}'s callback arrives on the main thread so the trade runs
- * inline with no scheduling hop.
+ * Custom amount flow: read a number from a sign (main-thread callback), run the trade, reopen the
+ * product page.
  */
 public final class AmountPrompt {
 
@@ -40,13 +35,13 @@ public final class AmountPrompt {
                 typed -> finish(player, itemId, buy, typed));
     }
 
-    /** Runs on the main thread with what came off the sign (null when no answer is coming). */
+    // typed is null when no answer is coming
     private void finish(Player player, String itemId, boolean buy, String typed) {
         if (typed == null && !SignInput.showingOwnInventory(player)) {
-            return;                               // another plugin's menu took over — leave it be
+            return;                               // another plugin's menu took over, leave it be
         }
         if (typed == null || typed.isBlank() || typed.equalsIgnoreCase("cancel")) {
-            gui.openProduct(player, itemId);      // cancelled — back where they were
+            gui.openProduct(player, itemId);      // cancelled: back where they were
             return;
         }
         long amount;

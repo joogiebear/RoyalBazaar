@@ -7,8 +7,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 /**
- * Thin wrapper over the Vault economy. RoyalBank registers itself as the Vault provider, so trading
- * through Vault automatically routes to the player's bank balance. All calls on the main thread.
+ * Wrapper over the Vault economy (RoyalBank registers as the provider). Call from the main thread.
  */
 public final class VaultHook {
 
@@ -54,10 +53,8 @@ public final class VaultHook {
     }
 
     /**
-     * Format a bazaar price. Deliberately NOT {@link #format}: economies round to whole coins, which
-     * collapses the buy/sell spread on cheap goods — cobblestone at 1.54/1.46 both rendered as "$1",
-     * making the market look broken (and the spread invisible). Sub-100 prices keep two decimals;
-     * above that the fraction is noise, so it's whole coins with separators.
+     * Format a bazaar price. Not {@link #format}: economies round to whole coins, which hides the
+     * spread on cheap goods. Two decimals below 100, whole coins above.
      */
     public String formatPrice(double amount) {
         if (Math.abs(amount) < 100) {

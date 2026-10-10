@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/** Provider failure tests drive the real service, inventory planning, pricing and audit path. */
+// provider failure tests drive the real service, inventory planning, pricing and audit path
 class BazaarServiceTest {
     private final JavaPlugin plugin = mock(JavaPlugin.class);
     private final MarketManager market = mock(MarketManager.class);

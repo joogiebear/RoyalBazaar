@@ -10,10 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.Map;
 
-/**
- * Loads user-facing text from {@code messages.yml} (every key has an inline fallback, so the file is
- * optional) and renders it through Adventure. Reloadable via {@code /bazaar reload}.
- */
+/** Loads {@code messages.yml}. Every key has an inline fallback, so the file is optional. */
 public final class MessageManager {
 
     private final JavaPlugin plugin;

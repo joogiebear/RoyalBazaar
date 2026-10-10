@@ -1,19 +1,15 @@
-# RoyalBazaar - instant buy, for one item.
-# Opened from the product page's "Buy Instantly" button. Every quantity here goes through the same
-# purchase as any other buy, so pricing, EconGuard checks and the inventory-full policy all apply.
+# Instant buy for one item, opened from the product page. Every buy here uses the normal pricing,
+# EconGuard checks and inventory-full policy.
 #
-# amount: accepts a number, "fill" (as many as fit and you can afford), or "all".
-# Click ids: rbazaar_buy · rbazaar_buy_amount_prompt · rbazaar_back · close · play_sound
+# amount: a number, "fill" (as many as fit and you can afford), or "all".
+# Click ids: rbazaar_buy, rbazaar_buy_amount_prompt, rbazaar_back, close_inventory, play_sound
 
 title: "&f%rbazaar_item_display% &7» &fInstant Buy"
 command: []
 rows: 4
 
-# Menu-level sounds. This plays when the menu opens — including when a button elsewhere opens it.
-# So a button that navigates (back, open_menu, open_buy, open_product) must NOT also add play_sound:
-# the destination menu already speaks for the click, and two sounds fire as one doubled click.
-# Buttons that only re-render the current menu (buy, sell, sell all) DO need their own play_sound,
-# because a refresh deliberately does not replay this sound.
+# Plays whenever the menu opens. Navigation buttons should not add their own play_sound (it would
+# double up); buttons that only re-render the menu (buy, sell, sell all) need one, since a refresh is silent.
 sounds:
   open:
     enabled: true
@@ -33,7 +29,7 @@ pages:
         - "111111111"
 
 slots:
-  # ---- the item being bought, with its live quote ----
+  # the item being bought, with its live quote
   - item: "%rbazaar_item% name:\"%rbazaar_item_display%\""
     lore:
       - ""
@@ -42,7 +38,6 @@ slots:
     row: 1
     column: 5
 
-  # ---- quantities ----
   - item: gold_nugget name:"&aBuy 1"
     lore:
       - "&7Cost: &a$%rbazaar_buy_cost_1%"
@@ -110,7 +105,6 @@ slots:
         args:
           item: "%rbazaar_item%"
 
-  # ---- nav ----
   - item: arrow name:"&7« Back"
     lore: []
     row: 4

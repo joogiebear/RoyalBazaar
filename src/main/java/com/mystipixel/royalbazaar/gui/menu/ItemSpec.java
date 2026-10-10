@@ -15,18 +15,11 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Parses the EcoMenus inline item syntax, e.g.
- * <pre>golden_horse_armor hide_enchants hide_attributes name:"&fCity Projects"</pre>
- * The first token is an eco lookup id (vanilla or {@code ecoitem:...}); the rest are flags
- * ({@code hide_enchants}, {@code hide_attributes}) and {@code key:"value"} modifiers ({@code name}).
- * Lore is supplied separately from the slot's {@code lore:} list.
- *
- * <p>Player heads follow the same convention the eco suite uses:
- * <pre>player_head texture:&lt;base64&gt;      # a custom head from a base64 texture value
- * player_head head:&lt;player&gt;             # a specific player's head (e.g. head:%player%)</pre>
- * Custom eco items that are themselves heads render their own texture automatically (via eco).
- *
- * <p>Modifiers may contain {placeholders}; call {@link #build} with the placeholder map at render time.
+ * Parses the EcoMenus inline item syntax: an eco lookup id, then flags and {@code key:"value"} modifiers.
+ * <pre>golden_horse_armor hide_enchants hide_attributes name:"&fCity Projects"
+ * player_head texture:&lt;base64&gt;
+ * player_head head:%player%</pre>
+ * Modifiers may contain {@code %placeholders%}, filled in by {@link #build}.
  */
 public final class ItemSpec {
 
@@ -79,7 +72,6 @@ public final class ItemSpec {
         return new ItemSpec(lookup, name, texture, head, hideEnch, hideAttr);
     }
 
-    /** Build the stack, resolving the lookup via eco and filling {placeholders} in name/lore. */
     public ItemStack build(EcoHook eco, Map<String, String> placeholders, List<String> lore) {
         ItemStack item = eco.resolve(apply(lookupId, placeholders), 1);
         if (item == null) {
@@ -109,7 +101,6 @@ public final class ItemSpec {
         return item;
     }
 
-    /** Apply a base64 {@code texture:} or a {@code head:} owner to a player-head, the eco-suite way. */
     private void applyHeadTexture(ItemStack item, ItemMeta meta, Map<String, String> placeholders) {
         if (item.getType() != Material.PLAYER_HEAD || !(meta instanceof SkullMeta skull)) {
             return;
@@ -127,9 +118,7 @@ public final class ItemSpec {
         }
     }
 
-    // ---- token helpers ----
-
-    /** Split on spaces but keep quoted segments (so name:"a b c" stays one token). */
+    // split on spaces, keeping quoted segments together
     private static List<String> tokenize(String raw) {
         List<String> out = new ArrayList<>();
         StringBuilder cur = new StringBuilder();

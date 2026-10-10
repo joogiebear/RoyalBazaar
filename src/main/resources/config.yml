@@ -2,13 +2,7 @@
 # Leave empty to open the first configured category.
 default-category: ""
 
-# ============================================================
-#  RoyalBazaar
-#  Algorithmic dynamic-pricing bazaar for the eco suite.
-#
-#  Items live in categories/*.yml   (add/remove items there)
-#  Menus live in gui/*.yml          (EcoMenus-style layouts)
-# ============================================================
+# Items are configured in categories/*.yml, menus in gui/*.yml (EcoMenus-style layouts).
 
 engine:
   # How often prices drift back toward their base (mean reversion) and stats roll. Seconds.
@@ -18,8 +12,7 @@ engine:
   # How often dirty prices are flushed to disk (write-behind). Seconds.
   flush-interval-seconds: 30
   # How long price history is kept, in days. Older snapshots are deleted after each new one.
-  # History only ever grows otherwise: one row per item per snapshot adds up to millions of
-  # rows a year, which bloats the database and slows every write. 0 = keep everything.
+  # 0 = keep everything (the table grows without bound).
   history-retention-days: 30
   # Smoothing for the trend arrow (0..1). Lower = smoother, slower to flip.
   trend-ema-alpha: 0.2
@@ -30,9 +23,8 @@ trading:
   #   partial - buy only what fits, charge for what fit
   #   drop    - buy the full amount, drop overflow at the player's feet
   inventory-full: refund
-  # Largest quantity a single buy may request (2304 = a full inventory of 64-stacks). Matters most
-  # with inventory-full: drop, where an unbounded order drops every overflow stack on the ground at
-  # once. 0 = no limit.
+  # Largest quantity a single buy may request (2304 = a full inventory of 64-stacks). 0 = no limit.
+  # Keep a limit with inventory-full: drop, or one order can drop thousands of stacks.
   max-order: 2304
   # Keep every item EcoShop also trades inside EcoShop's buy/sell range (spread included), even
   # without npc_floor / npc_ceiling. Outside it, players can buy from one and sell to the other at a

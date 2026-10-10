@@ -19,8 +19,7 @@ public final class MenuManager {
 
     public void reload() {
         byId.clear();
-        // No bazaar_main: /bazaar opens a category directly and the category rail is the navigation,
-        // so the old hub was removed rather than left as a menu nothing points at.
+        // no bazaar_main: /bazaar opens a category directly and the category rail is the navigation
         byId.put("bazaar_category", load("bazaar_category.yml", "&8Bazaar", 6));
         byId.put("bazaar_group", load("bazaar_group.yml", "&8Bazaar", 6));
         byId.put("bazaar_product", load("bazaar_product.yml", "&8Bazaar", 6));

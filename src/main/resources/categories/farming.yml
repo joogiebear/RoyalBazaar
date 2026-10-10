@@ -92,13 +92,13 @@ groups:
     order: 18
 
 items:
-  # --- Wheat & Seeds ---
+  # Wheat & Seeds
   wheat:
     item: "minecraft:wheat"
     group: wheat_seeds
     base_price: 3.0
     floor_pct: 0.25
-    elasticity: 20000    # regen-zone crop — responds within a farming session
+    elasticity: 20000    # regen-zone crop, responds within a farming session
   wheat_seeds:
     item: "minecraft:wheat_seeds"
     group: wheat_seeds
@@ -116,7 +116,7 @@ items:
     base_price: 10.0      # 3 wheat = 9
     elasticity: 20000
 
-  # --- Carrot ---
+  # Carrot
   carrot:
     item: "minecraft:carrot"
     group: carrot
@@ -129,7 +129,7 @@ items:
     base_price: 22.0      # 8 gold nuggets (17.8) + carrot
     elasticity: 20000
 
-  # --- Potato ---
+  # Potato
   potato:
     item: "minecraft:potato"
     group: potato
@@ -142,7 +142,7 @@ items:
     base_price: 4.0
     elasticity: 20000
 
-  # --- Beetroot ---
+  # Beetroot
   beetroot:
     item: "minecraft:beetroot"
     group: beetroot
@@ -156,7 +156,7 @@ items:
     elasticity: 20000
     floor_pct: 0.25
 
-  # --- Pumpkin & Melon ---
+  # Pumpkin & Melon
   pumpkin:
     item: "minecraft:pumpkin"
     group: pumpkin_melon
@@ -198,7 +198,7 @@ items:
     base_price: 21.0      # 8 gold nuggets + slice
     elasticity: 20000
 
-  # --- Mushrooms ---
+  # Mushrooms
   brown_mushroom:
     item: "minecraft:brown_mushroom"
     group: mushrooms
@@ -217,7 +217,7 @@ items:
     base_price: 13.0      # 2 mushrooms + bowl
     elasticity: 20000
 
-  # --- Cocoa & Cactus ---
+  # Cocoa & Cactus
   cocoa_beans:
     item: "minecraft:cocoa_beans"
     group: cocoa_cactus
@@ -236,7 +236,7 @@ items:
     elasticity: 20000
     floor_pct: 0.25
 
-  # --- Sugar Cane & Paper ---
+  # Sugar Cane & Paper
   sugar_cane:
     item: "minecraft:sugar_cane"
     group: sugar_cane
@@ -246,7 +246,7 @@ items:
   sugar:
     item: "minecraft:sugar"
     group: sugar_cane
-    base_price: 3.0       # below cane — 1 cane yields 1 sugar
+    base_price: 3.0       # below cane: 1 cane yields 1 sugar
     elasticity: 20000
   paper:
     item: "minecraft:paper"
@@ -257,7 +257,7 @@ items:
     group: sugar_cane
     base_price: 20.0      # 3 paper + leather
 
-  # --- Fruit & Berries ---
+  # Fruit & Berries
   apple:
     item: "minecraft:apple"
     group: fruit
@@ -269,7 +269,7 @@ items:
   enchanted_golden_apple:
     item: "minecraft:enchanted_golden_apple"
     group: fruit
-    base_price: 2500.0    # loot only — uncraftable
+    base_price: 2500.0    # loot only, uncraftable
     ceiling_pct: 5.0
     elasticity: 4000
   sweet_berries:
@@ -285,7 +285,7 @@ items:
     elasticity: 20000
     floor_pct: 0.25
 
-  # --- Leather & Beef ---
+  # Leather & Beef
   leather:
     item: "minecraft:leather"
     group: cow
@@ -299,7 +299,7 @@ items:
     group: cow
     base_price: 7.0
 
-  # --- Pork ---
+  # Pork
   porkchop:
     item: "minecraft:porkchop"
     group: pig
@@ -309,7 +309,7 @@ items:
     group: pig
     base_price: 7.0
 
-  # --- Chicken & Feather ---
+  # Chicken & Feather
   chicken:
     item: "minecraft:chicken"
     group: chicken
@@ -327,7 +327,7 @@ items:
     group: chicken
     base_price: 4.0
 
-  # --- Mutton & Wool ---
+  # Mutton & Wool
   mutton:
     item: "minecraft:mutton"
     group: sheep
@@ -339,9 +339,9 @@ items:
   white_wool:
     item: "minecraft:white_wool"
     group: sheep
-    base_price: 8.0       # 4 string (16) also makes one — crafting stays lossy
+    base_price: 8.0       # 4 string (16) also makes one, so crafting stays lossy
 
-  # --- Rabbit ---
+  # Rabbit
   rabbit:
     item: "minecraft:rabbit"
     group: rabbit
@@ -363,7 +363,7 @@ items:
     group: rabbit
     base_price: 45.0
 
-  # --- Nether Wart ---
+  # Nether Wart
   nether_wart:
     item: "minecraft:nether_wart"
     group: nether_wart
@@ -376,7 +376,7 @@ items:
     base_price: 72.0      # 9x nether wart
     elasticity: 20000
 
-  # --- Bees & Honey ---
+  # Bees & Honey
   honeycomb:
     item: "minecraft:honeycomb"
     group: bees
@@ -390,7 +390,7 @@ items:
     group: bees
     base_price: 42.0      # 4 honey bottles
 
-  # --- Flowers ---
+  # Flowers
   dandelion:
     item: "minecraft:dandelion"
     group: flowers
@@ -409,7 +409,7 @@ items:
     base_price: 60.0
     ceiling_pct: 4.0
 
-  # --- Dyes ---
+  # Dyes
   # Single-flower dyes sit BELOW the flower they come from, so milling flowers never prints money.
   bone_meal:
     item: "minecraft:bone_meal"

@@ -1,8 +1,5 @@
-# ============================================================
-#  RoyalBazaar messages
-#  Colour codes use '&' (e.g. &a). Placeholders are in {curly braces}.
-#  A prefix is prepended to every message; leave it "" for none.
-# ============================================================
+# Colour codes use '&' (e.g. &a). Placeholders are in {curly braces}.
+# The prefix is prepended to every message; leave it "" for none.
 prefix: ""
 
 players-only: "Only players can open the bazaar."

@@ -10,9 +10,8 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 
 /**
- * Routes clicks in a bazaar inventory to the effects bound on that slot. Any click while a bazaar menu
- * is on screen is cancelled (the menus are read-only display surfaces), so items can never be
- * extracted. "On screen" is decided by the inventory's {@link BazaarMenuHolder}, not the view map alone.
+ * Routes bazaar menu clicks to the slot's effects. Every click on a menu (detected by
+ * {@link BazaarMenuHolder}, not the view map alone) is cancelled so items can't be taken out.
  */
 public final class BazaarGuiListener implements Listener {
 
@@ -32,14 +31,12 @@ public final class BazaarGuiListener implements Listener {
         Inventory top = event.getView().getTopInventory();
         OpenView view = gui.viewOf(player);
         if (!BazaarMenuHolder.isMenu(top)) {
-            // A view with no bazaar menu on screen is stale (e.g. another plugin cancelled the open).
-            // Honouring it would cancel the player's own inventory clicks and run buttons on them.
+            // stale view (e.g. another plugin cancelled the open); honouring it would hijack the player's own clicks
             if (view != null) {
                 gui.forget(player);
             }
             return;
         }
-        // Any interaction with a bazaar menu is display-only.
         event.setCancelled(true);
         if (view == null || event.getClickedInventory() != top) {
             return;

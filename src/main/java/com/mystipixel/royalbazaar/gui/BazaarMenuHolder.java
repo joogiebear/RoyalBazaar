@@ -7,9 +7,8 @@ import org.bukkit.inventory.InventoryHolder;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Marks an inventory as a bazaar menu. Click handling keys off this rather than only the per-player
- * view map: the map can go stale (another plugin cancelling the open, a disable mid-session), and a
- * menu it has lost track of would otherwise be a chest of real item stacks.
+ * Marks an inventory as a bazaar menu. Click handling checks this, not only the per-player view map,
+ * because the map can go stale and an untracked menu would otherwise act as a real chest.
  */
 public final class BazaarMenuHolder implements InventoryHolder {
 

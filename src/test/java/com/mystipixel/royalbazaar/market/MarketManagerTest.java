@@ -14,7 +14,6 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Category loading and {@code /bazaar reload}: what survives, what is refused, what gets bracketed. */
 class MarketManagerTest {
 
     private static final Logger LOG = Logger.getLogger("test");
@@ -26,7 +25,7 @@ class MarketManagerTest {
     }
 
     private static EcoShopHook noShop(Path tmp) {
-        return new EcoShopHook(tmp.toFile(), LOG);   // no EcoShop/ folder → empty
+        return new EcoShopHook(tmp.toFile(), LOG);   // no EcoShop/ folder, so empty
     }
 
     private static final String FARMING = """

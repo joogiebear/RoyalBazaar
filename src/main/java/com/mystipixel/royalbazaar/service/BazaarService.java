@@ -21,14 +21,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The buy/sell transaction flow. Everything here runs on the main thread, so the price mutation,
- * balance move and inventory change do not interleave with other scheduled tasks. This is not a
- * transaction across Vault and player persistence: explicit rejected sale payments restore the
- * reserved inventory, while provider exceptions/crashes have an unknown outcome. The DB audit
- * write is dispatched async.
- *
- * <p>Order of operations mirrors the design doc: resolve → quote → EconGuard veto → funds/items
- * check → reserve sell items → move money → deliver buy items → apply market impact → record.
+ * The buy/sell flow. Main thread only. Order: resolve, quote, EconGuard veto, funds/items check,
+ * reserve sell items, move money, deliver buy items, apply market impact, record. Not atomic across
+ * Vault: a rejected sale payment restores the reserved items, but a provider crash has an unknown outcome.
  */
 public final class BazaarService {
 
@@ -51,9 +46,6 @@ public final class BazaarService {
         this.config = config;
     }
 
-    // ------------------------------------------------------------------ buy
-
-
     public PluginConfig config() {
         return config;
     }
@@ -75,11 +67,8 @@ public final class BazaarService {
             return TradeResult.fail(TradeResult.Status.ERROR, TradeSide.BUY, itemId,
                     "You can buy at most " + maxOrder + " at once.");
         }
-        // Items are handed over through int-sized stacks, so an order beyond int range would be paid
-        // for in full but truncated in the (int) cast below. Clamp before pricing so the cost and the
-        // delivery always describe the same quantity.
+        // clamp before pricing so cost and the (int) delivery below describe the same quantity
         amount = Math.min(amount, Integer.MAX_VALUE);
-        // An id that no longer resolves (eco item removed, material typo) can't be delivered.
         ItemStack prototype = eco.resolve(itemId, 1);
         if (prototype == null) {
             return TradeResult.fail(TradeResult.Status.DISABLED, TradeSide.BUY, itemId,
@@ -94,7 +83,6 @@ public final class BazaarService {
             return TradeResult.fail(TradeResult.Status.INSUFFICIENT_FUNDS, TradeSide.BUY, itemId, "Not enough money.");
         }
 
-        // How many can actually fit? Policy decides what happens to the remainder.
         int fits = spaceFor(player, itemId, prototype.getMaxStackSize(), (int) amount);
         long fill = amount;
         if (fits < amount) {
@@ -123,8 +111,6 @@ public final class BazaarService {
         return TradeResult.ok(TradeSide.BUY, itemId, fill, finalCost);
     }
 
-    // ------------------------------------------------------------------ sell
-
     /** What a {@link #sellAll} pass did, for the summary message. */
     public record SellAllResult(int distinctItems, long units, double proceeds, int blocked) {
         public boolean soldNothing() {
@@ -133,10 +119,8 @@ public final class BazaarService {
     }
 
     /**
-     * Sell everything in the player's inventory that {@code scope} covers, skipping anything the bazaar
-     * doesn't trade. Each item goes through the normal {@link #sell} path, so price impact, the audit
-     * record and any EconGuard veto apply exactly as they would selling by hand — a blocked item is
-     * counted and skipped rather than aborting the whole run.
+     * Sell everything in the inventory that {@code scope} covers, each through {@link #sell}. Blocked
+     * or frozen items are counted and skipped rather than aborting the run.
      */
     public SellAllResult sellAll(Player player, Collection<MarketItem> scope) {
         int distinct = 0;
@@ -154,7 +138,7 @@ public final class BazaarService {
                 proceeds += result.total();
             } else if (result.status() == TradeResult.Status.REJECTED_BY_GUARD
                     || result.status() == TradeResult.Status.DISABLED) {
-                blocked++;   // vetoed by EconGuard, or frozen by an admin — skipped, not sold
+                blocked++;   // vetoed by EconGuard or frozen by an admin
             }
         }
         return new SellAllResult(distinct, units, proceeds, blocked);
@@ -183,9 +167,8 @@ public final class BazaarService {
             return TradeResult.fail(TradeResult.Status.REJECTED_BY_GUARD, TradeSide.SELL, itemId, "Trade blocked.");
         }
 
-        // Plan on detached stacks: a shallow array copy would still mutate the originals, losing
-        // quantities/metadata when a rejected payment is rolled back. Do not resolve replacement
-        // items from their ID: a custom stack may have unique metadata which must survive rejection.
+        // plan on cloned stacks and restore the originals on rejection; never rebuild them from the id,
+        // a custom stack may carry unique metadata
         ItemStack[] before = player.getInventory().getStorageContents();
         ItemStack[] reserved = reserveItems(before, itemId, (int) fill);
         if (reserved == null) {
@@ -204,15 +187,9 @@ public final class BazaarService {
         return TradeResult.ok(TradeSide.SELL, itemId, fill, proceeds);
     }
 
-    // ------------------------------------------------------------------ inventory helpers
-
     /**
-     * How many of an item a "fill my inventory" purchase should buy: as many as physically fit, capped by
-     * what the player can actually pay for.
-     *
-     * <p>The cap needs a search rather than division because the price climbs as the quantity rises —
-     * buying 500 costs more per unit than buying 5 — so the affordable quantity isn't balance/unit_price.
-     * Returns 0 when nothing fits or nothing is affordable, and the caller reports why.
+     * Quantity for a "fill my inventory" buy: as many as fit, capped by what the player can afford
+     * (binary search, since unit price rises with quantity). 0 when nothing fits or is affordable.
      */
     public long fillAmount(Player player, String itemId) {
         MarketItem item = market.get(itemId);
@@ -245,7 +222,6 @@ public final class BazaarService {
         return low;
     }
 
-    /** Free capacity for this item across empty + partially-filled matching stacks. */
     private int spaceFor(Player player, String itemId, int max, int wanted) {
         int space = 0;
         for (ItemStack stack : player.getInventory().getStorageContents()) {
@@ -274,7 +250,7 @@ public final class BazaarService {
         }
     }
 
-    /** Reserve the exact quantity without changing any live stack; null means the quote is stale. */
+    // works on clones, never live stacks; null means the quote is stale
     private ItemStack[] reserveItems(ItemStack[] original, String itemId, int amount) {
         int remaining = amount;
         ItemStack[] contents = new ItemStack[original.length];
@@ -296,8 +272,6 @@ public final class BazaarService {
         return remaining == 0 ? contents : null;
     }
 
-    // ------------------------------------------------------------------ audit
-
     private void record(Player player, String itemId, TradeSide side, long qty, double unitMid, double total) {
         guard.observe(player, side, itemId, qty, total);
         long ts = System.currentTimeMillis();
@@ -305,12 +279,7 @@ public final class BazaarService {
                 () -> db.logTransaction(player.getUniqueId(), itemId, side, qty, unitMid, total, ts));
     }
 
-    // ------------------------------------------------------------------ quote helpers (menus / commands)
-
-    /**
-     * The display name of the group an item belongs to. Falls back to the category name for items that
-     * aren't in a group, so a breadcrumb built from it never renders as an empty gap.
-     */
+    // falls back to the category name so a breadcrumb never renders an empty gap
     private static String groupNameOf(CategoryConfig category, String groupId) {
         if (category == null) {
             return "";
@@ -341,16 +310,15 @@ public final class BazaarService {
         p.put("rbazaar_trend", trendArrow(item));
         p.put("rbazaar_change_7d", pctSince(item.mid(), item.midWeekAgo()));
         p.put("rbazaar_trend_7d", trendSince(item.mid(), item.midWeekAgo()));
-        p.put("rbazaar_low_7d", item.weekLow() > 0 ? vault.formatPrice(item.weekLow()) : "—");
-        p.put("rbazaar_high_7d", item.weekHigh() > 0 ? vault.formatPrice(item.weekHigh()) : "—");
+        p.put("rbazaar_low_7d", item.weekLow() > 0 ? vault.formatPrice(item.weekLow()) : "-");
+        p.put("rbazaar_high_7d", item.weekHigh() > 0 ? vault.formatPrice(item.weekHigh()) : "-");
         if (viewer != null) {
             int held = eco.countHeld(viewer, item.id());
             p.put("rbazaar_held_amount", String.valueOf(held));
             p.put("rbazaar_sell_value_all", vault.formatPrice(PricingEngine.sellProceeds(item, Math.max(1, held))));
         }
 
-        // Where this item sits, so a product or buy menu can show a breadcrumb in its title. Without
-        // these the placeholders had nothing to resolve against and were printed literally.
+        // breadcrumb placeholders for product and buy menu titles
         CategoryConfig category = market.category(item.categoryId());
         p.put("rbazaar_category_id", item.categoryId() == null ? "" : item.categoryId());
         p.put("rbazaar_category", category == null ? "" : category.displayName());
@@ -359,19 +327,12 @@ public final class BazaarService {
         return p;
     }
 
-    /**
-     * Live summary for a group icon on the category grid: how many products it holds, the cheapest
-     * buy price in it, its combined 24h volume and an aggregate trend. Computed at render time from
-     * the group's items, so the icon reflects the market rather than a config snapshot.
-     *
-     * <p>{@code items} may be empty (a declared group nobody put items in) — the summary degrades to
-     * zeroes rather than throwing, so a half-finished config still opens.
-     */
+    /** Live summary for a group icon. {@code items} may be empty, which yields zeroes. */
     public Map<String, String> groupPlaceholders(CategoryConfig cat, CategoryConfig.Group group,
                                                  List<MarketItem> items) {
         Map<String, String> p = new HashMap<>();
         p.put("rbazaar_category", cat.displayName());
-        p.put("rbazaar_category_id", cat.id());   // raw id — open_menu args need this, not the display name
+        p.put("rbazaar_category_id", cat.id());   // raw id: open_menu args need this, not the display name
         p.put("rbazaar_group", group.id());
         p.put("rbazaar_group_name", group.name());
         p.put("rbazaar_group_icon", group.icon());
@@ -403,7 +364,7 @@ public final class BazaarService {
         p.put("rbazaar_group_max_buy", vault.formatPrice(max));
         p.put("rbazaar_group_volume_24h", String.valueOf(volume));
 
-        // Aggregate the group's move from the summed mids, so one cheap item can't swing the arrow.
+        // from summed mids, so one cheap item can't swing the arrow
         double pct = weightedThen <= 0 ? 0 : (weightedNow - weightedThen) / weightedThen * 100.0;
         p.put("rbazaar_group_change_24h", String.format("%s%.1f%%", pct >= 0 ? "&a+" : "&c", pct));
         double eps = 0.1;
@@ -411,7 +372,7 @@ public final class BazaarService {
         return p;
     }
 
-    /** Config {@code display:} override, else the resolved item's own name, else a prettified id. */
+    // config display: override, else the item's own name, else a prettified id
     private String displayNameFor(MarketItem item) {
         if (item.displayName() != null && !item.displayName().isBlank()) {
             return item.displayName();
@@ -444,10 +405,10 @@ public final class BazaarService {
         return String.format("%s%.1f%%", pct >= 0 ? "&a+" : "&c", pct);
     }
 
-    /** Percentage move from {@code then} to {@code now}, or a dash while no baseline exists yet. */
+    // a dash while no baseline exists yet
     private String pctSince(double now, double then) {
         if (then <= 0) {
-            return "&7—";
+            return "&7-";
         }
         double pct = (now - then) / then * 100.0;
         return String.format("%s%.1f%%", pct >= 0 ? "&a+" : "&c", pct);

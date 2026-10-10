@@ -13,13 +13,9 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
 /**
- * Item resolution via the eco platform. A bazaar item id is an eco lookup key —
- * {@code minecraft:diamond}, {@code ecoitem:enchanted_cobblestone}, etc. eco's {@link Items#lookup}
- * resolves the display stack <em>and</em> matches inventory stacks back to the id (reading the
- * {@code ecoitem:} PDC key, not the material), which is exactly what buy/sell need.
- *
- * <p>Every eco type is touched only after the {@link #present} guard, so if eco is absent the JVM
- * never links {@code com.willfp.*} and this class degrades to vanilla-only.
+ * Item resolution. A bazaar id is an eco lookup key ({@code minecraft:diamond},
+ * {@code ecoitem:enchanted_cobblestone}). eco types are only touched behind the {@link #present} guard,
+ * so without eco the JVM never links {@code com.willfp.*} and this works vanilla-only.
  */
 public final class EcoHook {
 
@@ -33,10 +29,9 @@ public final class EcoHook {
         return present;
     }
 
-    /** Build a fresh display {@link ItemStack} of {@code amount} for the given id, or null if unknown. */
+    /** A fresh display stack for the id, or null if unknown. */
     public ItemStack resolve(String id, int amount) {
-        // Vanilla ids (bare or minecraft:) go straight to Bukkit — eco's lookup doesn't reliably
-        // resolve the "minecraft:" namespace, so we must not rely on it for vanilla materials.
+        // vanilla ids go straight to Bukkit: eco's lookup doesn't reliably resolve minecraft:
         Material vanilla = vanillaMaterial(id);
         if (vanilla != null) {
             return new ItemStack(vanilla, amount);
@@ -57,7 +52,7 @@ public final class EcoHook {
         return null;
     }
 
-    /** Does this inventory stack match the bazaar id? Vanilla by material, custom by eco. */
+    /** Vanilla ids match by material (plain stacks only), custom ids by eco. */
     public boolean matches(String id, ItemStack stack) {
         if (stack == null || stack.getType().isAir()) {
             return false;
@@ -90,12 +85,8 @@ public final class EcoHook {
         return false;
     }
 
-    /**
-     * True for a stack that is nothing more than its material: no name, lore, enchantments, stored
-     * enchantments, damage, trim, block contents or plugin data. A vanilla listing prices the plain
-     * item, so sell/sell-all must never take a Sharpness V sword, a Mending book, a half-broken elytra
-     * or another plugin's custom item (or a bazaar menu icon) at that price.
-     */
+    // a vanilla listing prices the plain item, so sell must never take an enchanted, damaged,
+    // renamed or plugin-tagged stack at that price
     static boolean isPlain(ItemStack stack) {
         if (!stack.hasItemMeta()) {
             return true;
@@ -117,7 +108,6 @@ public final class EcoHook {
         return !(meta instanceof BlockStateMeta blockState && blockState.hasBlockState());
     }
 
-    /** Count how many matching units the player holds. */
     public int countHeld(Player player, String id) {
         int total = 0;
         for (ItemStack stack : player.getInventory().getStorageContents()) {
@@ -128,17 +118,12 @@ public final class EcoHook {
         return total;
     }
 
-    /**
-     * The vanilla {@link Material} for an id that is bare ({@code wheat}) or explicitly
-     * {@code minecraft:}-namespaced, or {@code null} if the id is a custom (non-minecraft) namespace
-     * or not a known material.
-     */
     private Material vanillaMaterial(String id) {
         String raw = id;
         if (id.contains(":")) {
             String ns = id.substring(0, id.indexOf(':'));
             if (!ns.equalsIgnoreCase("minecraft")) {
-                return null; // custom namespace (ecoitem:, etc.) — resolve via eco
+                return null; // custom namespace, resolved via eco
             }
             raw = id.substring(id.indexOf(':') + 1);
         }
