@@ -30,6 +30,11 @@ public final class ConfigValidator {
                     + "Buys that overflow the inventory may not behave as intended.");
         }
 
+        String conflict = config.npcArbitrageConflict();
+        if (!conflict.equals("keep") && !conflict.equals("skip")) {
+            warn("trading.npc-arbitrage-conflict is '" + conflict + "'; expected keep or skip. Using keep.");
+        }
+
         if (config.loadCategories().isEmpty()) {
             warn("no categories/*.yml loaded; the bazaar will have nothing to trade.");
         }

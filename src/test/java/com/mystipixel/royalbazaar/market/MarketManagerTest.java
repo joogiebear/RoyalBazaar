@@ -5,6 +5,10 @@ import com.mystipixel.royalbazaar.hooks.EcoShopHook;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mockito;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,9 +23,14 @@ class MarketManagerTest {
     private static final Logger LOG = Logger.getLogger("test");
 
     private static CategoryConfig category(String id, String yaml, boolean guard) throws Exception {
+        return category(id, yaml, guard, false);
+    }
+
+    private static CategoryConfig category(String id, String yaml, boolean guard, boolean skipConflicts)
+            throws Exception {
         YamlConfiguration cfg = new YamlConfiguration();
         cfg.loadFromString(yaml);
-        return CategoryConfig.load(id, cfg, LOG, guard);
+        return CategoryConfig.load(id, cfg, LOG, guard, skipConflicts);
     }
 
     private static EcoShopHook noShop(Path tmp) {
@@ -161,5 +170,94 @@ class MarketManagerTest {
         MarketManager open = new MarketManager(LOG);
         open.load(List.of(category("mining", yaml, false)), 0.2, shop);
         assertEquals(8, open.get("minecraft:iron_ingot").floor(), 1e-9, "guard off: config range as written");
+    }
+
+    private static final String IRON = """
+            items:
+              iron:
+                item: minecraft:iron_ingot
+                base_price: 80
+                spread: 0.04
+                floor_pct: 0.1
+                ceiling_pct: 10
+            """;
+
+    private static EcoShopHook shop(String itemId, Double buy, Double sell) {
+        EcoShopHook shop = Mockito.mock(EcoShopHook.class);
+        Mockito.when(shop.buyValue(itemId)).thenReturn(buy);
+        Mockito.when(shop.sellValue(itemId)).thenReturn(sell);
+        return shop;
+    }
+
+    // which EcoShop sides exist: each one bounds only its own side of the bazaar
+    @ParameterizedTest
+    @CsvSource({"true,true", "true,false", "false,true"})
+    void npcGuardOnlyConstrainsTheSidesEcoShopPrices(boolean hasBuy, boolean hasSell) throws Exception {
+        EcoShopHook shop = shop("minecraft:iron_ingot", hasBuy ? 100.0 : null, hasSell ? 60.0 : null);
+        MarketItem item = category("mining", IRON, true).buildItems(shop).getFirst();
+        assertEquals(hasSell ? 60 / 1.02 : 8, item.floor(), 1e-9);
+        assertEquals(hasBuy ? 100 / 0.98 : 800, item.ceiling(), 1e-9);
+        // total order prices stay safe even when the integral runs beyond the mid caps
+        for (long qty : new long[]{1, 64, 10_000, 1_000_000}) {
+            if (hasSell) {
+                item.setMid(item.floor());
+                assertTrue(PricingEngine.buyCost(item, qty) >= 60 * qty - 1e-7);
+            }
+            if (hasBuy) {
+                item.setMid(item.ceiling());
+                assertTrue(PricingEngine.sellProceeds(item, qty) <= 100 * qty + 1e-7);
+            }
+        }
+        MarketItem unguarded = category("mining", IRON, false).buildItems(shop).getFirst();
+        assertEquals(8, unguarded.floor());
+        assertEquals(800, unguarded.ceiling());
+    }
+
+    @ParameterizedTest
+    @ValueSource(doubles = {0, -5})
+    void nonPositiveNpcPricesAreIgnored(double price) throws Exception {
+        MarketItem item = category("mining", IRON, true)
+                .buildItems(shop("minecraft:iron_ingot", price, price)).getFirst();
+        assertEquals(8, item.floor());
+        assertEquals(800, item.ceiling());
+    }
+
+    @Test
+    void conflictingNpcPricesKeepTheListingUnguardedByDefault() throws Exception {
+        EcoShopHook shop = shop("minecraft:wheat", 0.1, 1000.0);
+        List<MarketItem> items = category("farming", FARMING, true).buildItems(shop);
+        assertEquals(List.of("minecraft:wheat", "minecraft:carrot"), items.stream().map(MarketItem::id).toList());
+        MarketItem wheat = items.getFirst();
+        assertEquals(4, wheat.floor());
+        assertEquals(30, wheat.ceiling());
+    }
+
+    @Test
+    void conflictingNpcPricesUnlistTheItemWhenSkipIsChosen() throws Exception {
+        EcoShopHook shop = shop("minecraft:wheat", 0.1, 1000.0);
+        List<MarketItem> items = category("farming", FARMING, true, true).buildItems(shop);
+        assertEquals(List.of("minecraft:carrot"), items.stream().map(MarketItem::id).toList());
+    }
+
+    @Test
+    void npcSellAboveTheCeilingIsAConflictEvenWhenEcoShopIsConsistent() throws Exception {
+        // EcoShop pays 40 and charges 50: sane on its own, but wheat's ceiling is 30
+        EcoShopHook shop = shop("minecraft:wheat", 50.0, 40.0);
+        assertEquals(2, category("farming", FARMING, true).buildItems(shop).size());
+        assertEquals(1, category("farming", FARMING, true, true).buildItems(shop).size());
+    }
+
+    @Test
+    void skipChangesNothingWhenTheBracketHolds() throws Exception {
+        EcoShopHook shop = shop("minecraft:iron_ingot", 100.0, 60.0);
+        MarketItem item = category("mining", IRON, true, true).buildItems(shop).getFirst();
+        assertEquals(60 / 1.02, item.floor(), 1e-9);
+        assertEquals(100 / 0.98, item.ceiling(), 1e-9);
+    }
+
+    @Test
+    void guardOffIgnoresConflictsEvenWithSkip() throws Exception {
+        EcoShopHook shop = shop("minecraft:wheat", 0.1, 1000.0);
+        assertEquals(2, category("farming", FARMING, false, true).buildItems(shop).size());
     }
 }
