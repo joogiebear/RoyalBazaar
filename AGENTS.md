@@ -50,6 +50,15 @@ When a comment is removed, check whether the code itself needs a better name to 
 
 Config files (`config.yml` etc.) are different: server owners read them, so short comments explaining each option and its valid values are expected. Apply the same plain tone there, no banners made of `#####`, no essays.
 
+## Player-facing text
+
+Everything a player or server owner sees in game comes from a config file, never from a string in the code: item names and lore, menu titles and buttons, chat messages, titles, action bars and boss bars. That includes symbols such as ✔ ✘ ★ and colour codes, which are the server's styling.
+
+- Ship the text as defaults in the bundled `messages.yml`, `lang.yml` or menu files, and read it from there. A code fallback is only for a key that's missing, and it should match the shipped default.
+- New text gets a new config key; don't build player-visible sentences by concatenating literals in code.
+- Cleanup passes don't restyle this text. Changing it is a deliberate change, made in the config, in its own PR.
+- Console log lines and exception messages for admins can stay in code.
+
 ## Other things to avoid
 
 - Emoji or check-mark symbols in console logs, chat messages or the README.
