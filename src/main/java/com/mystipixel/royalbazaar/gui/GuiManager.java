@@ -10,6 +10,7 @@ import com.mystipixel.royalbazaar.hooks.EcoHook;
 import com.mystipixel.royalbazaar.market.MarketItem;
 import com.mystipixel.royalbazaar.market.MarketManager;
 import com.mystipixel.royalbazaar.service.BazaarService;
+import com.mystipixel.royalbazaar.util.ItemNames;
 import com.mystipixel.royalbazaar.util.Text;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -36,6 +37,7 @@ public final class GuiManager {
     private final MarketManager market;
     private final BazaarService service;
     private final EcoHook eco;
+    private final ItemNames itemNames;
 
     private final Map<UUID, OpenView> views = new HashMap<>();
 
@@ -46,8 +48,10 @@ public final class GuiManager {
      */
     private final Set<UUID> refreshing = new HashSet<>();
 
-    public GuiManager(MenuManager menus, MarketManager market, BazaarService service, EcoHook eco) {
+    public GuiManager(MenuManager menus, MarketManager market, BazaarService service, EcoHook eco,
+                      ItemNames itemNames) {
         this.menus = menus;
+        this.itemNames = itemNames;
         this.market = market;
         this.service = service;
         this.eco = eco;
@@ -94,15 +98,17 @@ public final class GuiManager {
     /**
      * Results for a search, rendered with the category template so paging, icons and buy/sell clicks all
      * behave exactly as they do inside a category. Matches on the item's configured display name and its
-     * id, so both "enchanted cobblestone" and "cobble" find something.
+     * id, so both "enchanted cobblestone" and "cobble" find something, and on its name in any language
+     * file loaded into {@link ItemNames}. Case and accents are ignored.
      */
     public void openSearch(Player player, String query, int page) {
-        String needle = query == null ? "" : query.toLowerCase(Locale.ROOT).trim();
+        String needle = ItemNames.normalize(query);
         List<MarketItem> hits = new ArrayList<>();
         if (!needle.isEmpty()) {
             for (MarketItem item : market.all()) {
-                String name = item.displayName() == null ? "" : item.displayName().toLowerCase(Locale.ROOT);
-                if (name.contains(needle) || item.id().toLowerCase(Locale.ROOT).contains(needle)) {
+                if (ItemNames.normalize(item.displayName()).contains(needle)
+                        || item.id().toLowerCase(Locale.ROOT).contains(needle)
+                        || itemNames.translatedNameContains(item.id(), needle)) {
                     hits.add(item);
                 }
             }

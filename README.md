@@ -304,6 +304,14 @@ button behaves correctly however the player arrived.
 `%rbazaar_change_24h%` `%rbazaar_volume_24h%` `%rbazaar_spread_pct%`
 `%rbazaar_category%` `%rbazaar_category_id%` `%rbazaar_group%` `%rbazaar_group_name%`
 
+### Searching in other languages
+
+Search matches an item's configured name and id, ignoring case and accents. The server only knows
+English item names, so to let players search in their own language, copy Minecraft language files
+(e.g. `fr_fr.json`: in a client's `.minecraft/assets/indexes/<version>.json`, look up
+`minecraft/lang/fr_fr.json` and copy the file under `assets/objects/` that its hash names) into
+`plugins/RoyalBazaar/lang/` and run `/bazaar reload`. Searching `chair` then finds Rotten Flesh.
+
 ---
 
 ## Storage
