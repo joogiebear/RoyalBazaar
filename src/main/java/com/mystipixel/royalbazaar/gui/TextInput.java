@@ -60,7 +60,8 @@ public final class TextInput implements Listener {
         void close(Player player);
     }
 
-    private record Pending(Player player, long token, Consumer<String> callback, Runnable cancelTimeout) {
+    private record Pending(Player player, long token, Consumer<String> callback, Runnable cancelTimeout,
+                           boolean dismissed) {
     }
 
     private final Host host;
@@ -93,7 +94,7 @@ public final class TextInput implements Listener {
                 finish(id, token, null);
             }
         });
-        Pending previous = pending.put(id, new Pending(player, token, callback, cancelTimeout));
+        Pending previous = pending.put(id, new Pending(player, token, callback, cancelTimeout, false));
         if (previous != null) {
             // registered first, so the old caller sees isWaiting and leaves the screen alone
             previous.cancelTimeout().run();
@@ -142,7 +143,7 @@ public final class TextInput implements Listener {
         }
         Pending p = pending.remove(id);
         p.cancelTimeout().run();
-        p.callback().accept(text);
+        p.callback().accept(p.dismissed() ? null : text);
     }
 
     // next tick: these come from inside events, and the caller should see the player gone, dead or
@@ -150,6 +151,8 @@ public final class TextInput implements Listener {
     private void dismiss(UUID id) {
         Pending p = pending.get(id);
         if (p != null && !closed) {
+            // An answer may already be queued; invalidate it before the next tick can deliver it.
+            pending.put(id, new Pending(p.player(), p.token(), p.callback(), p.cancelTimeout(), true));
             long token = p.token();
             host.nextTick(() -> finish(id, token, null));
         }
