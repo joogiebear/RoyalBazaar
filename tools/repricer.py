@@ -16,9 +16,9 @@ Runs on the server, in-place, with a .bak-reprice backup per file.
 """
 import json, re, glob, os, sys
 
-PRICES = json.load(open('/tmp/newprices.json'))
+ROOT = sys.argv[1] if len(sys.argv) > 1 else sys.exit('usage: repricer.py <server>/plugins/EcoItems/items/enchanted_items')
 SPREAD = 0.05
-ROOT = '/home/container-8380d453/plugins/EcoItems/items/enchanted_items'
+PRICES = json.load(open('/tmp/newprices.json'))
 
 changed = skipped = 0
 for f in glob.glob(ROOT + '/**/*.yml', recursive=True):

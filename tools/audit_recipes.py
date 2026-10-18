@@ -17,7 +17,7 @@ from collections import defaultdict
 
 RECIPE_DIR = '/tmp/rx/data/minecraft/recipe'
 TAG_DIR = '/tmp/rx/data/minecraft/tags/item'
-SHOP_DIR = '/home/container-8380d453/plugins/EcoShop/categories'
+SHOP_DIR = sys.argv[1] if len(sys.argv) > 1 else sys.exit('usage: audit_recipes.py <server>/plugins/EcoShop/categories')
 
 # ---------------------------------------------------------------- EcoShop prices
 def load_shop():

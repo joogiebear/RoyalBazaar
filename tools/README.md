@@ -90,7 +90,8 @@ and a loop is a money printer for anyone who finds it.
 ## repricer.py
 
 Rewrites EcoItems' `shop-pricing` block *and the lore players actually read* to agree with the
-generated bazaar values. Runs server-side, in place, with a `.bak-reprice` per file.
+generated bazaar values. Runs server-side, in place, with a `.bak-reprice` per file:
+`python3 repricer.py <server>/plugins/EcoItems/items/enchanted_items`.
 
 `shop-pricing` is inert metadata — nothing in the eco suite reads it — but its numbers are
 duplicated into each item's lore, so leaving them stale makes the tooltip contradict the bazaar.
@@ -110,7 +111,7 @@ cd /tmp && mkdir -p rx && cd rx
 unzip -q -o /path/to/cache/mojang_<ver>.jar "META-INF/versions/<ver>/server-<ver>.jar"
 unzip -q -o META-INF/versions/<ver>/server-<ver>.jar "data/minecraft/recipe/*" "data/minecraft/tags/item/*"
 
-python3 audit_recipes.py       # must print: 0 craft printer(s), 0 smelt printer(s)
+python3 audit_recipes.py <server>/plugins/EcoShop/categories   # must print: 0 craft printer(s), 0 smelt printer(s)
 ```
 
 Only recipes whose every ingredient is NPC-buyable can loop — 32 of 1,585 here — so the report is
